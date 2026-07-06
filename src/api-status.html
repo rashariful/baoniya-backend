@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upayon API Status</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+
+    p {
+      font-size: 1.2rem;
+      animation: fadeInUp 1.2s ease-in-out forwards;
+    }
+
+    .pulse {
+      margin-top: 40px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #ffc400;
+      box-shadow: 0 0 0 rgba(165, 154, 4, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(132, 0, 255, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 30px rgba(0, 255, 174, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 174, 0);
+      }
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 0.9rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="pulse"></div>
+  <h1>Upayon</h1>
+  <p>🚀 Backend is running successfully!</p>
+  <!-- <div class="footer">Powered by Express.js</div> -->
+  <div class="footer">Database Design & Devlop by <a href="https://www.digitalagencypark.com/">digital agency park</a></div>
+</body>
+</html>
