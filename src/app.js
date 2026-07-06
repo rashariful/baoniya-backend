@@ -16,11 +16,11 @@ const allowedOrigins = [
   "http://localhost:8080",
   "https://www.upayon.com",
   "https://upayon.com",
-  "https://edu-management-backend.vercel.app",
-  "https://www.edu-management-backend.vercel.app",
+  "https://baoniya-backend.vercel.app",
+  "https://www.baoniya-backend.vercel.app",
 
-  "https://madrasha-dash-v1.vercel.app",
-  "https://www.madrasha-dash-v1.vercel.app",
+  "https://baoniya-dash.vercel.app",
+  "https://www.baoniya-dash.vercel.app",
 ];
 
 
