@@ -69,12 +69,52 @@ const deleteAdmission = catchAsync(async (req, res) => {
     data: result,
   });
 });
+// ==========================
+// Approve Admission
+// ==========================
+const approveAdmission = catchAsync(async (req, res) => {
+
+  const result = await AdmissionServices.approveAdmission(
+    req.params.id,
+    req.body
+  );
+
+  sendResponse(res, {
+    status: 200,
+    success: true,
+    message: "Admission approved successfully",
+    data: result,
+  });
+
+});
+
+
+// ==========================
+// Reject Admission
+// ==========================
+const rejectAdmission = catchAsync(async (req, res) => {
+
+  const result = await AdmissionServices.rejectAdmission(
+    req.params.id
+  );
+
+  sendResponse(res, {
+    status: 200,
+    success: true,
+    message: "Admission rejected successfully",
+    data: result,
+  });
+
+});
 
 export const AdmissionControllers ={
   createAdmission,
   getAllAdmission,
   getSingleAdmission,
   updateAdmission,
-  deleteAdmission
+  deleteAdmission,
+
+    approveAdmission,
+  rejectAdmission,
 
 }

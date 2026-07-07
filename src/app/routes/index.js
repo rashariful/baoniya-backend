@@ -24,6 +24,7 @@ import { GradeRuleRoutes } from "../modules/GradeRule/GradeRule.routes.js";
 import { SubjectRoutes } from "../modules/Subject/Subject.routes.js";
 import { SectionRoutes } from "../modules/Section/Section.routes.js";
 import { AcademicSessionRoutes } from "../modules/AcademicSession/AcademicSession.routes.js";
+import { StudentAcademicRecordRoutes } from "../modules/StudentAcademicRecord/StudentAcademicRecord.routes.js";
 
 
 const router = Router();
@@ -77,6 +78,10 @@ const moduleRoutes = [
   {
     path: "/academic-session",
     route: AcademicSessionRoutes
+  },
+  {
+    path: "/student-academic-record",
+    route: StudentAcademicRecordRoutes
   },
    
   {
