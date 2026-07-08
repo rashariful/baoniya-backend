@@ -14,13 +14,13 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:8080",
-  "https://www.upayon.com",
-  "https://upayon.com",
-  "https://baoniya-backend.vercel.app",
-  "https://www.baoniya-backend.vercel.app",
+  "https://www.bajhs.edu.bd",
+  "https://bajhs.edu.bd",
+  "https://backoffice.bajhs.edu.bd",
+  "https://www.backoffice.bajhs.edu.bd",
+  "https://school.bajhs.edu.bd",
+  "https://www.school.bajhs.edu.bd",
 
-  "https://baoniya-dash.vercel.app",
-  "https://www.baoniya-dash.vercel.app",
 ];
 
 
