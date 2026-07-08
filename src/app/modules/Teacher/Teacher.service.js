@@ -1,13 +1,19 @@
 
 import { Teacher } from "./Teacher.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
+import { createTeacherWithCredentials } from "../../utils/teacher.utils.js";
 
 // Declare the Services 
 
+
 const createTeacher = async (payload) => {
-    const result = await Teacher.create(payload);
-    return result;
-}
+  const result = await createTeacherWithCredentials(payload);
+  return result;
+};
+// const createTeacher = async (payload) => {
+//     const result = await Teacher.create(payload);
+//     return result;
+// }
 const getAllTeacher = async (query) => {
     const TeacherSearchableFields = ["name", "phone"];
     const resultQuery = new QueryBuilder(Teacher.find(), query).search(TeacherSearchableFields).filter().sort().fields().paginate().limit();

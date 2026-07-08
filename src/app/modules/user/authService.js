@@ -58,6 +58,95 @@ const registerUser = async ({
   };
 };
 
+const loginUser = async ({ email, phone, password }) => {
+  if (!password || (!email && !phone)) {
+    throw new Error("Email or phone, and password are required");
+  }
+
+  // email ba phone jekono ekta diye khoja hobe
+  const query = email ? { email: email.toLowerCase() } : { phone };
+
+  const user = await User.findOne(query);
+
+  if (!user) {
+    throw new Error("Invalid credentials");
+  }
+
+  if (user.status !== "active") {
+    throw new Error(`Account is ${user.status}. Please contact admin`);
+  }
+
+  const isValid = await user.matchPassword(password);
+  if (!isValid) {
+    throw new Error("Invalid credentials");
+  }
+
+  const accessToken = JwtHelpers.generateAccessToken(user);
+  const refreshToken = JwtHelpers.generateRefreshToken(user);
+
+  user.refreshToken = refreshToken;
+  user.lastLogin = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  return {
+    user: {
+      _id: user._id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      profileModel: user.profileModel,
+      profileId: user.profileId,
+      mustChangePassword: user.mustChangePassword,
+    },
+    accessToken,
+    refreshToken,
+  };
+};
+// login user  
+// const loginUser = async ({ email, password }, req) => {
+  
+//   // user find
+//   const user = await User.findOne({ email });
+  
+//   if (!user) {
+//     throw new Error("User not found");
+//   }
+  
+//   // password check
+//   const isValid = await bcrypt.compare(
+//     password,
+//     user.password
+//   );
+  
+//   if (!isValid) {
+//     throw new Error("Invalid credentials");
+//   }
+  
+//   // generate tokens
+//   const accessToken =
+//   JwtHelpers.generateAccessToken(user);
+  
+//   const refreshToken =
+//     JwtHelpers.generateRefreshToken(user);
+    
+//     // 🔥 refresh token database এ save
+//     user.refreshToken = refreshToken;
+    
+//     await user.save({
+//       validateBeforeSave: false,
+//   });
+  
+//   return {
+//     userId: user._id,
+//     email: user.email,
+//     name: user.name,
+//     accessToken,
+//     refreshToken,
+//   };
+// };
+
+
+// logout user 
 // const registerUser = async ({
 //   name,
 //   email,
@@ -123,50 +212,6 @@ const getAllUser = async (query) => {
     meta,
   };
 };
-
-// login user  
-const loginUser = async ({ email, password }, req) => {
-
-  // user find
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // password check
-  const isValid = await bcrypt.compare(
-    password,
-    user.password
-  );
-
-  if (!isValid) {
-    throw new Error("Invalid credentials");
-  }
-
-  // generate tokens
-  const accessToken =
-    JwtHelpers.generateAccessToken(user);
-
-  const refreshToken =
-    JwtHelpers.generateRefreshToken(user);
-
-  // 🔥 refresh token database এ save
-  user.refreshToken = refreshToken;
-
-  await user.save({
-    validateBeforeSave: false,
-  });
-
-  return {
-    userId: user._id,
-    email: user.email,
-    name: user.name,
-    accessToken,
-    refreshToken,
-  };
-};
-// logout user 
 const logout = async (req, res) => {
   const token = req.cookies.refreshToken;
 

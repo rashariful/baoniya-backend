@@ -9,10 +9,10 @@ const AdmissionSchema = new Schema(
     email: { type: String },
 
     classId: {
-  type: Schema.Types.ObjectId,
-  ref: "Classes",
-  required: true,
-},
+      type: Schema.Types.ObjectId,
+      ref: "Classes",
+      required: true,
+    },
     roll: { type: String },
 
     address: { type: String },
@@ -24,7 +24,7 @@ const AdmissionSchema = new Schema(
       default: "pending",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Admission = model("Admission", AdmissionSchema);
