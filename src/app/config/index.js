@@ -1,23 +1,37 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// FIXED: Correct path.join syntax
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 export default {
   node_env: process.env.NODE_ENV,
-  port: process.env.PORT,
+  port: process.env.PORT || 5000,
   database_url: process.env.DATABASE_URL,
+
   cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
   cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
+
   whatsapp_number: process.env.WHATSAPP_NUMBER,
   whatsapp_link: process.env.WHATSAPP_LINK,
+
   email: process.env.EMAIL_USER,
   app_password: process.env.EMAIL_PASS,
 
+  google: {
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    callback_url: process.env.GOOGLE_CALLBACK_URL,
+  },
+
+  facebook: {
+    app_id: process.env.FACEBOOK_APP_ID,
+    app_secret: process.env.FACEBOOK_APP_SECRET,
+    callback_url: process.env.FACEBOOK_CALLBACK_URL,
+  },
+
   courier: {
-    steadfast: {  
+    steadfast: {
       name: "steadfast",
       api_key: process.env.STEADFAST_API_KEY,
       secret_key: process.env.STEADFAST_SECRET_KEY,
