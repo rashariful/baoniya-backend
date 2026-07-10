@@ -2,7 +2,7 @@
 import {Schema, model} from "mongoose";
 
 // Declare the Schema of the Mongo model
-const StudentSchema = new Schema(
+const NotificationSchema = new Schema(
   {
     // Define the schema fields
   },
@@ -12,4 +12,4 @@ const StudentSchema = new Schema(
 );
 
 // Export the model
-export const Student = model("Student", StudentSchema);
+export const Notification = model("Notification", NotificationSchema);
