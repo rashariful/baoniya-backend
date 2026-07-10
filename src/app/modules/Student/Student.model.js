@@ -25,7 +25,7 @@ const StudentSchema = new Schema(
     guardianName: { type: String },
     guardianPhone: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       index: true, // notification query e filter/lookup fast korbe
     },
@@ -50,16 +50,3 @@ const StudentSchema = new Schema(
 
 export const Student = model("Student", StudentSchema);
 
-
-
-// import mongoose, { Schema } from "mongoose";
-
-// const StudentSchema = new Schema(
-//   {
-//     // তোমার সব fields
-//   },
-//   { timestamps: true }
-// );
-
-// export const Student =
-//   mongoose.models.Student || mongoose.model("Student", StudentSchema);

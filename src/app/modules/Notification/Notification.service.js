@@ -1,6 +1,4 @@
 import { Notification } from "./Notification.model.js";
-// import { Student } from "../student/student.model.js"; // ✅ tomar actual path onujayi thik koro
-// import { Fees } from "../fees/fees.model.js";           // ✅ tomar actual path onujayi thik koro
 import { SmsSender } from "../../middlewares/smsSender.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { Student } from "../Student/Student.model.js";

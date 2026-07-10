@@ -1,21 +1,7 @@
-// import mongoose from "mongoose";
-// import { User } from "../User/user.model.js";
-// import { Student } from "./student.model.js";
-// import { JwtHelpers } from "../../../helpers/jwtHelpers.js";
-// import { generatePassword } from "../../../utils/generatePassword.js";
-// import generateStudentID from "../../../utils/generateStudentID.js";
-
 
 import mongoose from "mongoose";
 import { Student } from "./Student.model.js";
 import { StudentAcademicRecord } from "../StudentAcademicRecord/StudentAcademicRecord.model.js";
-// import { Student } from "./Student.model.js";
-// import { StudentAcademicRecord } from "../StudentAcademicRecord/StudentAcademicRecord.model.js";
-
-
-// import generateStudentID from "../utils/generateStudentID.js";
-// import { generatePassword } from "../utils/generatePassword.js";
-// import { JwtHelpers } from "../helpers/jwtHelpers.js";
 import generateStudentID from "../../utils/generateStudentId.js";
 import { generatePassword } from "../../utils/passwordgenerate.js";
 import { JwtHelpers } from "../../utils/jwtHelpers.js";
@@ -51,7 +37,8 @@ export const createStudentWithAcademicRecord = async (payload, externalSession =
     if (userExists) {
       throw new Error("A user already exists with this phone number");
     }
-
+console.log(userExists,"User check passed. Proceeding to create user and student...");
+    console.log(phone,"Phone check passed. Proceeding to create user and student...");
     // 2️⃣ Password generate
     const plainPassword = generateDefaultPassword("student", phone);
 
