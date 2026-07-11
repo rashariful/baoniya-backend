@@ -28,4 +28,4 @@ const FeesSchema = new Schema(
 );
 
 export const Fees =
-  mongoose.models.Fees || mongoose.model("Fees", FeesSchema);
+  mongoose.models.Fees || mongoose.model("Fees", FeesSchema); 
