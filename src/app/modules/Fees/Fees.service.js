@@ -2,11 +2,14 @@ import { Fees } from "./Fees.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 
 // Declare the Services
-
 const createFees = async (payload) => {
   const result = await Fees.create(payload);
   return result;
 };
+
+
+
+export default createFees;
 const getAllFees = async (query) => {
   const FeesSearchableFields = [];
   const resultQuery = new QueryBuilder(Fees.find().populate("studentId"), query)

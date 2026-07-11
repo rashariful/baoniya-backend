@@ -13,6 +13,11 @@ const FeesSchema = new Schema(
     },
     paidAmount: {
       type: Number,
+      default: 0,
+    },
+    dueAmount: {
+      type: Number,
+      default: 0,
     },
     month: {
       type: String,
@@ -27,5 +32,23 @@ const FeesSchema = new Schema(
   { timestamps: true }
 );
 
+// auto-calculate dueAmount + status before save (create & save())
+FeesSchema.pre("save", function (next) {
+  const amount = Number(this.amount) || 0;
+  const paidAmount = Number(this.paidAmount) || 0;
+
+  this.dueAmount = Math.max(amount - paidAmount, 0);
+
+  if (this.dueAmount === 0 && paidAmount > 0) {
+    this.status = "paid";
+  } else if (paidAmount > 0 && this.dueAmount > 0) {
+    this.status = "partial";
+  } else {
+    this.status = "unpaid";
+  }
+
+  next();
+});
+
 export const Fees =
-  mongoose.models.Fees || mongoose.model("Fees", FeesSchema); 
+  mongoose.models.Fees || mongoose.model("Fees", FeesSchema);
