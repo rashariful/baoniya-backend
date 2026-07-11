@@ -2,7 +2,7 @@ import { Notification } from "./Notification.model.js";
 import { SmsSender } from "../../middlewares/smsSender.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { Student } from "../Student/Student.model.js";
-import { Fees } from "../fees/fees.model.js";
+import { Fees } from "../fees/Fees.model.js";
 
 // ============================
 // Existing CRUD (unchanged)
