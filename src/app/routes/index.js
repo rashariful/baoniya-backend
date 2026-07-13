@@ -25,6 +25,7 @@ import { SubjectRoutes } from "../modules/Subject/Subject.routes.js";
 import { SectionRoutes } from "../modules/Section/Section.routes.js";
 import { AcademicSessionRoutes } from "../modules/AcademicSession/AcademicSession.routes.js";
 import { StudentAcademicRecordRoutes } from "../modules/StudentAcademicRecord/StudentAcademicRecord.routes.js";
+import { GalleryRoutes } from "../modules/Gallery/Gallery.routes.js";
 // import { NotificationRoutes } from "../modules/NotificationTestFile/Notification.routes.js";
 
 
@@ -41,6 +42,10 @@ const moduleRoutes = [
   {
     path: "/banner",
     route: BannerRoutes
+  },
+  {
+    path: "/gallery",
+    route: GalleryRoutes
   },
   {
     path: "/admission",

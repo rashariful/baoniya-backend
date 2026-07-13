@@ -11,20 +11,20 @@ const BannerSchema = new Schema(
       type: String,
       required: true,
     },
-    redirectUrl: {
-      type: String,
-      required: true,
-    },
-    bannerType: {
-      type: String,
-      enum: ["primary", "secondary", "popup"],
-      default: "primary",
-    },
+    // redirectUrl: {
+    //   type: String,
+    //   required: true,
+    // },
+    // bannerType: {
+    //   type: String,
+    //   enum: ["primary", "secondary", "popup"],
+    //   default: "primary",
+    // },
 
-    order: {
-      type: Number,
-      required: true,
-    },
+    // order: {
+    //   type: Number,
+    //   required: true,
+    // },
     isActive: {
       type: Boolean,
       required: true,

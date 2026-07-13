@@ -8,8 +8,11 @@ import sendResponse from "../../utils/sendResponse.js";
 
 // Create Teacher
 const createTeacher = catchAsync(async (req, res) => {
-  const result = await 
-  TeacherServices.createTeacher(req.body);
+  const result = await TeacherServices.createTeacher(
+    req.file,
+    req.body
+  );
+
   sendResponse(res, {
     status: 201,
     success: true,
@@ -47,8 +50,13 @@ const getSingleTeacher = catchAsync(async (req, res) => {
 // Update Teacher
 const updateTeacher = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await 
-  TeacherServices.updateTeacher(id, req.body);
+
+  const result = await TeacherServices.updateTeacher(
+    id,
+    req.file,
+    req.body
+  );
+
   sendResponse(res, {
     status: 200,
     success: true,
@@ -56,7 +64,6 @@ const updateTeacher = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
 // Delete Teacher
 const deleteTeacher = catchAsync(async (req, res) => {
   const { id } = req.params;
