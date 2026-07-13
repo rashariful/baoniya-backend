@@ -12,9 +12,9 @@ export const createTeacherWithCredentials = async (
   let session;
 
   try {
-    console.log("======================================");
-    console.log("Teacher Create Started");
-    console.log("Mongo ReadyState:", mongoose.connection.readyState);
+    
+    
+    
 
     if (mongoose.connection.readyState !== 1) {
       throw new Error("MongoDB is not connected");
@@ -22,14 +22,15 @@ export const createTeacherWithCredentials = async (
 
     session = externalSession || (await mongoose.startSession());
 
-    console.log("Session Started");
+    
 
     if (!externalSession) {
       session.startTransaction();
-      console.log("Transaction Started");
+      
     }
 
     const {
+      thumbnail, // ✅ Added
       name,
       email,
       phone,
@@ -63,32 +64,33 @@ export const createTeacherWithCredentials = async (
       employmentType,
     } = payload;
 
-    console.log("Checking Phone:", phone);
+    
+    
 
     const userExists = await User.findOne({ phone }).session(session);
 
-    console.log("Phone Check Done");
+    
 
     if (userExists) {
       throw new Error("Phone already exists");
     }
 
-    console.log("Generating Password");
+    
 
     const plainPassword = generateDefaultPassword("teacher", phone);
 
-    console.log("Password Generated");
+    
 
-    console.log("Generating Teacher ID");
+    
 
     const teacherId = await generateTeacherID("TCH", session);
 
-    console.log("Teacher ID:", teacherId);
+    
 
     const userId = new mongoose.Types.ObjectId();
     const teacherObjectId = new mongoose.Types.ObjectId();
 
-    console.log("Creating User");
+    
 
     const user = new User({
       _id: userId,
@@ -102,17 +104,23 @@ export const createTeacherWithCredentials = async (
 
     await user.save({ session });
 
-    console.log("User Created");
+    
 
-    console.log("Creating Teacher");
+    
 
     const teacher = new Teacher({
       _id: teacherObjectId,
       userId,
       teacherId,
 
+      // ✅ Image
+      thumbnail,
+
+      // Personal
       name,
       phone,
+
+      // Professional
       designation,
       department,
       subject,
@@ -122,12 +130,18 @@ export const createTeacherWithCredentials = async (
       joinDate,
       schoolJoinDate,
       bio,
+
+      // Contact
       alternativePhone,
       presentAddress,
       permanentAddress,
       emergencyContact,
+
+      // Social & Education
       social,
       education,
+
+      // Identity
       nid,
       birthCertificateNo,
       gender,
@@ -135,19 +149,23 @@ export const createTeacherWithCredentials = async (
       bloodGroup,
       religion,
       maritalStatus,
+
+      // Bank
       bankName,
       accountName,
       accountNumber,
       branchName,
       routingNumber,
+
+      // Employment
       employmentType,
     });
 
     await teacher.save({ session });
 
-    console.log("Teacher Created");
+    
 
-    console.log("Generating Tokens");
+    
 
     const accessToken = JwtHelpers.generateAccessToken(user);
     const refreshToken = JwtHelpers.generateRefreshToken(user);
@@ -159,11 +177,11 @@ export const createTeacherWithCredentials = async (
       validateBeforeSave: false,
     });
 
-    console.log("Refresh Token Saved");
+    
 
     if (!externalSession) {
       await session.commitTransaction();
-      console.log("Transaction Committed");
+      
     }
 
     return {
@@ -184,20 +202,19 @@ export const createTeacherWithCredentials = async (
 
     if (session && !externalSession) {
       await session.abortTransaction();
-      console.log("Transaction Aborted");
+      
     }
 
     throw error;
   } finally {
     if (session && !externalSession) {
       session.endSession();
-      console.log("Session Ended");
+      
     }
 
-    console.log("======================================");
+    
   }
 };
-
 
 // import mongoose from "mongoose";
 // import { User } from "../modules/user/user.model.js";

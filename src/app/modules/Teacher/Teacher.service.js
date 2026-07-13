@@ -7,24 +7,28 @@ import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
 // Declare the Services 
 
 const createTeacher = async (file, payload) => {
-    console.log("File:", file);
-console.log("Payload Before:", payload);
+
   try {
     if (file?.buffer) {
+    
       const imageName = `teacher-${Date.now()}`;
-      const { secure_url } = await sendImageToCloudinary(
+
+      const uploadResult = await sendImageToCloudinary(
         imageName,
         file.buffer
       );
 
-      payload.thumbnail = secure_url; // অথবা image/profileImage
+      payload.thumbnail = uploadResult.secure_url;
+
+    
     }
 
     const result = await createTeacherWithCredentials(payload);
 
     return result;
   } catch (error) {
-    throw new Error(error.message);
+    console.error(error);
+    throw error;
   }
 };
 // const createTeacher = async (payload) => {
