@@ -59,14 +59,14 @@ const moduleRoutes = [
     path: "/attendance",
     route: AttendanceRoutes
   },
+  {
+    path: "/exam",
+    route: ExamRoutes
+  },
    
   {
     path: "/exam-result",
     route: ExamResultRoutes
-  },
-  {
-    path: "/exam",
-    route: ExamRoutes
   },
   {
     path: "/result-setting",

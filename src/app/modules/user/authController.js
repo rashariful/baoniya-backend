@@ -160,10 +160,21 @@ const deleteUser = catchAsync(async (req, res) => {
 //     data: result });
 // });
 
-const getMe = (req, res) => {
-  res.status(200).json(req.user); // middleware থেকে পাওয়া user
+const getMe = async (req, res) => {
+  try {
+    const data = await AuthService.getMe(req.user.id); // req.user.id verifyToken theke ashe
+    res.status(200).json({
+      success: true,
+      message: "Profile fetched successfully",
+      data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
-
 const refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;

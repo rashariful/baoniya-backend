@@ -25,7 +25,7 @@ const StudentSchema = new Schema(
     guardianName: { type: String },
     guardianPhone: {
       type: String,
-      // required: true,
+      required: true,
       trim: true,
       index: true, // notification query e filter/lookup fast korbe
     },

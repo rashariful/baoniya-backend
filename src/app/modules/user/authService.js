@@ -10,6 +10,7 @@ import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { getPasswordResetEmailTemplate } from "../../utils/emailTemplates.js";
+import { Teacher } from "../Teacher/Teacher.model.js";
 
 
 const registerUser = async ({
@@ -278,7 +279,33 @@ const updateProfile = async (userId, file, updates) => {
 
 // get me 
 const getMe = async (id) => {
-  return await User.findById(id).select("-password -refreshToken");
+  const user = await User.findById(id).select("-password -refreshToken -resetPasswordToken");
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  let profile = null;
+
+  switch (user.profileModel) {
+    case "Teacher":
+      profile = await Teacher.findOne({ userId: user._id }).lean();
+      break;
+    // pore student, guardian etc add korben
+    default:
+      profile = null;
+  }
+
+  return {
+    _id: user._id,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    profileModel: user.profileModel,
+    status: user.status,
+    isActive: user.isActive,
+    profile,
+  };
 };
 
 // change password 
