@@ -1,6 +1,7 @@
 import { Student } from "./Student.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { createStudentWithAcademicRecord } from "./student.utils.js";
+import { User } from "../user/user.model.js";
 // import { createStudentWithAcademicRecord } from "./student.utils.js";
 
 // Declare the Services
@@ -15,16 +16,24 @@ const createStudent = async (payload) => {
 // }
 const getAllStudent = async (query) => {
   const StudentSearchableFields = ["name", "roll", "phone"];
+
   const resultQuery = new QueryBuilder(
-    Student.find().populate("classId"),
+    Student.find()
+      .populate("classId")
+      .populate("sectionId")
+      .populate("sessionId")
+      .populate({
+        path: "userId",
+        select: "-password -refreshToken",
+      }),
     query,
   )
     .search(StudentSearchableFields)
     .filter()
     .sort()
     .fields()
-    .paginate()
-    .limit();
+    .paginate();
+
   const result = await resultQuery.modelQuery;
   const meta = await resultQuery.countTotal();
 
