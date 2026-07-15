@@ -8,8 +8,6 @@ import { upload } from "../../utils/sendImageToCloudinary.js";
 
 const router = express.Router();
 
-
-
 router.post(
   "/",
   upload.single("thumbnail"),

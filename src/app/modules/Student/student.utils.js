@@ -48,7 +48,7 @@ export const createStudentWithAcademicRecord = async (
     const plainPassword = generateDefaultPassword("student", phone);
 
     // Generate Student ID
-    const studentId = await generateStudentID("STD", session);
+    const studentId = await generateStudentID("STD");
 
     // Pre-generate ObjectIds
     const preGeneratedUserId = new mongoose.Types.ObjectId();

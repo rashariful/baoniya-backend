@@ -29,12 +29,12 @@ const StudentSchema = new Schema(
       trim: true,
       index: true, // notification query e filter/lookup fast korbe
     },
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-      index: true, // notification query e filter/lookup fast korbe
-    },
+    // phone: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    //   index: true, // notification query e filter/lookup fast korbe
+    // },
 
     classId: { type: Schema.Types.ObjectId, ref: "Classes" },
     sectionId: { type: Schema.Types.ObjectId, ref: "Section" },

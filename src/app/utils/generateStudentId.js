@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
-// Counter schema (already ache tomar order system e, same use korte parbe)
+// Counter schema - এইটা থাকতেই হবে ফাইলের top এ
 const CounterSchema = new mongoose.Schema({
-  _id: { type: String, required: true }, // e.g., "student_seq_2026"
+  _id: { type: String, required: true },
   seq: { type: Number, default: 0 },
 });
 const Counter =
   mongoose.models.Counter || mongoose.model("Counter", CounterSchema);
 
-// Luhn check digit (tomar existing function, reuse kora jabe)
+// Luhn check digit
 const calculateLuhnCheckDigit = (numberString) => {
   let sum = 0;
   let shouldDouble = true;
@@ -27,16 +27,15 @@ const calculateLuhnCheckDigit = (numberString) => {
 };
 
 // Student ID generator
-const generateStudentID = async (prefix = "STD", session = null) => {
+const generateStudentID = async (prefix = "STD") => {
   const now = new Date();
   const yy = now.getFullYear().toString().slice(-2);
-
   const counterId = `student_seq_${yy}`;
 
   const counter = await Counter.findOneAndUpdate(
     { _id: counterId },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true, session } // 🔥 session pass
+    { new: true, upsert: true }
   );
 
   const paddedSequence = counter.seq.toString().padStart(4, "0");
@@ -47,6 +46,56 @@ const generateStudentID = async (prefix = "STD", session = null) => {
 };
 
 export default generateStudentID;
+
+// import mongoose from "mongoose";
+
+// // Counter schema (already ache tomar order system e, same use korte parbe)
+// const CounterSchema = new mongoose.Schema({
+//   _id: { type: String, required: true }, // e.g., "student_seq_2026"
+//   seq: { type: Number, default: 0 },
+// });
+// const Counter =
+//   mongoose.models.Counter || mongoose.model("Counter", CounterSchema);
+
+// // Luhn check digit (tomar existing function, reuse kora jabe)
+// const calculateLuhnCheckDigit = (numberString) => {
+//   let sum = 0;
+//   let shouldDouble = true;
+
+//   for (let i = numberString.length - 1; i >= 0; i--) {
+//     let digit = parseInt(numberString.charAt(i), 10);
+//     if (shouldDouble) {
+//       digit *= 2;
+//       if (digit > 9) digit -= 9;
+//     }
+//     sum += digit;
+//     shouldDouble = !shouldDouble;
+//   }
+
+//   return ((10 - (sum % 10)) % 10).toString();
+// };
+
+// // Student ID generator
+// const generateStudentID = async (prefix = "STD", session = null) => {
+//   const now = new Date();
+//   const yy = now.getFullYear().toString().slice(-2);
+
+//   const counterId = `student_seq_${yy}`;
+
+//   const counter = await Counter.findOneAndUpdate(
+//     { _id: counterId },
+//     { $inc: { seq: 1 } },
+//     { new: true, upsert: true, session } // 🔥 session pass
+//   );
+
+//   const paddedSequence = counter.seq.toString().padStart(4, "0");
+//   const baseNumber = `${yy}${paddedSequence}`;
+//   const checkDigit = calculateLuhnCheckDigit(baseNumber);
+
+//   return `${prefix}-${yy}-${paddedSequence}-${checkDigit}`;
+// };
+
+// export default generateStudentID;
 
 
 // import mongoose from "mongoose";
