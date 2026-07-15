@@ -14,6 +14,7 @@ const StudentSchema = new Schema(
       required: true,
       index: true,
     },
+    thumbnail: { type: String },
     name: { type: String, required: true },
     roll: { type: String },
     registrationNo: { type: String, default: null, index: true },
