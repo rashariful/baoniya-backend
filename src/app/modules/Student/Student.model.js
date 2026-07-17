@@ -19,6 +19,8 @@ const StudentSchema = new Schema(
     roll: { type: String },
     registrationNo: { type: String, default: null, index: true },
 
+    dob: { type: String },
+    bloodGroup: { type: String },
     fatherName: { type: String },
     motherName: { type: String },
 

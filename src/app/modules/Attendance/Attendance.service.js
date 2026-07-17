@@ -3,6 +3,7 @@
 // import AppError from "../../errors/AppError.js"; // apnar existing error handler path diye adjust korben
 
 import AppError from "../../errors/appError.js";
+import { fetchAcsEvents } from "../Hikvision/Hikvision.client.js";
 import { User } from "../user/user.model.js";
 import { Attendance } from "./Attendance.model.js";
 
@@ -62,10 +63,17 @@ const markDeviceAttendance = async (payload) => {
 
   // User ke khuje pawa hocche deviceUserId diye
   // Note: User model e ekta "deviceUserId" field thaka lagbe (enrollment er somoy save kora)
-  const user = await User.findOne({ deviceUserId });
-  if (!user) {
-    throw new AppError(404, "No user found for this device ID");
-  }
+const user = await User.findOne({
+  role: "teacher",
+  "biometricDevices.deviceUserId": String(deviceUserId),
+});
+
+if (!user) {
+  throw new AppError(
+    404,
+    `No teacher found for deviceUserId: ${deviceUserId}`
+  );
+}
 
   const scanTime = timestamp ? new Date(timestamp) : new Date();
   const date = new Date(scanTime);
@@ -155,6 +163,44 @@ const deleteAttendance = async (id) => {
   return result;
 };
 
+
+
+// ---------------------------------------------------------
+// 8. Hikvision device theke event fetch kore attendance sync
+// ---------------------------------------------------------
+const syncDeviceAttendance = async () => {
+  const now = new Date();
+
+  const startTime = new Date(now);
+  startTime.setHours(0, 0, 0, 0);
+
+  const events = await fetchAcsEvents({
+    startTime, // ❌ toISOString() নয়
+    endTime: now, // ❌ toISOString() নয়
+    maxResults: 30,
+  });
+
+  const results = [];
+
+  for (const event of events) {
+    if (event.major !== 5 || !event.employeeNoString) continue;
+
+    const attendance = await markDeviceAttendance({
+      deviceUserId: event.employeeNoString,
+      deviceId: "hik-device-1",
+      source: event.currentVerifyMode?.includes("fp")
+        ? "fingerprint"
+        : "face",
+      timestamp: event.time,
+    });
+
+    results.push(attendance);
+  }
+
+  return results;
+};
+
+
 export const AttendanceServices = {
   createAttendance,
   markSelfAttendance,
@@ -163,6 +209,7 @@ export const AttendanceServices = {
   getSingleAttendance,
   updateAttendance,
   deleteAttendance,
+  syncDeviceAttendance,
 };
 
 

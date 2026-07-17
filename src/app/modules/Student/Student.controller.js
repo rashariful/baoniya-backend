@@ -9,7 +9,8 @@ import sendResponse from "../../utils/sendResponse.js";
 // Create Student
 const createStudent = catchAsync(async (req, res) => {
   const result = await 
-  StudentServices.createStudent(req.body);
+  StudentServices.createStudent(    req.file,
+req.body);
   sendResponse(res, {
     status: 201,
     success: true,
@@ -48,7 +49,7 @@ const getSingleStudent = catchAsync(async (req, res) => {
 const updateStudent = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await 
-  StudentServices.updateStudent(id, req.body);
+  StudentServices.updateStudent(id,req.file, req.body);
   sendResponse(res, {
     status: 200,
     success: true,

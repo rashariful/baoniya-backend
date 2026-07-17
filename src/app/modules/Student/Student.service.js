@@ -2,14 +2,41 @@ import { Student } from "./Student.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { createStudentWithAcademicRecord } from "./student.utils.js";
 import { User } from "../user/user.model.js";
+import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
 // import { createStudentWithAcademicRecord } from "./student.utils.js";
 
 // Declare the Services
-const createStudent = async (payload) => {
-  const result = await createStudentWithAcademicRecord(payload);
+const createStudent = async (file, payload) => {
 
-  return result;
+  try {
+    if (file?.buffer) {
+    
+      const imageName = `student-${Date.now()}`;
+
+      const uploadResult = await sendImageToCloudinary(
+        imageName,
+        file.buffer
+      );
+
+      payload.thumbnail = uploadResult.secure_url;
+
+    
+    }
+
+    const result = await createStudentWithAcademicRecord(payload);
+
+    return result;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 };
+
+// const createStudent = async (payload) => {
+//   const result = await createStudentWithAcademicRecord(payload);
+
+//   return result;
+// };
 // const createStudent = async (payload) => {
 //     const result = await Student.create(payload);
 //     return result;
@@ -46,13 +73,32 @@ const getSingleStudent = async (id) => {
   const result = await Student.findById(id);
   return result;
 };
-const updateStudent = async (id, payload) => {
-  const result = await Student.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
-  return result;
+
+const updateStudent = async (id, file, payload) => {
+  try {
+    if (file?.buffer) {
+      const imageName = `student-${Date.now()}`;
+      const { secure_url } = await sendImageToCloudinary(
+        imageName,
+        file.buffer
+      );
+
+      payload.thumbnail = secure_url;
+    }
+
+    const result = await Student.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+    });
+
+    return result;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
+
+
+
 const deleteStudent = async (id) => {
   const result = await Student.findByIdAndDelete(id);
   return result;

@@ -31,6 +31,8 @@ const createTeacher = async (file, payload) => {
     throw error;
   }
 };
+
+
 // const createTeacher = async (payload) => {
 //     const result = await Teacher.create(payload);
 //     return result;

@@ -6,7 +6,7 @@ const router = Router();
 
 // Admin/manual create
 router.post("/", AttendanceControllers.createAttendance);
-
+router.post("/sync-device", AttendanceControllers.syncDeviceAttendance);
 // Mobile theke self check-in/out -> Phase 1 testing er jonno MAIN endpoint
 // auth middleware thakle: router.post("/check-in", auth(), AttendanceControllers.selfCheckIn);
 router.post("/check-in", AttendanceControllers.selfCheckIn);

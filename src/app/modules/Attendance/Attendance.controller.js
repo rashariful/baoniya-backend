@@ -87,6 +87,14 @@ const deleteAttendance = catchAsync(async (req, res) => {
   });
 });
 
+const syncDeviceAttendance = catchAsync(async (req, res) => {
+  const result = await AttendanceServices.syncDeviceAttendance();
+  res.status(200).json({
+    success: true,
+    message: `${result.length} attendance records synced`,
+    data: result,
+  });
+});
 export const AttendanceControllers = {
   createAttendance,
   selfCheckIn,
@@ -95,6 +103,7 @@ export const AttendanceControllers = {
   getSingleAttendance,
   updateAttendance,
   deleteAttendance,
+  syncDeviceAttendance
 };
 
 
