@@ -1,15 +1,41 @@
+import { Schema, model } from "mongoose";
 
-import {Schema, model} from "mongoose";
-
-// Declare the Schema of the Mongo model
 const ContactSchema = new Schema(
   {
-    // Define the schema fields
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: false,
+      lowercase: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    subject: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Export the model
 export const Contact = model("Contact", ContactSchema);

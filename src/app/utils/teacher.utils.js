@@ -12,34 +12,29 @@ export const createTeacherWithCredentials = async (
   let session;
 
   try {
-    
-    
-    
-
     if (mongoose.connection.readyState !== 1) {
       throw new Error("MongoDB is not connected");
     }
 
     session = externalSession || (await mongoose.startSession());
 
-    
-
     if (!externalSession) {
       session.startTransaction();
-      
     }
 
+    // Payload Destructuring
     const {
-      thumbnail, // ✅ Added
+      thumbnail,
       name,
       email,
       phone,
+      indexNumber, // Added
       designation,
       department,
       subject,
       qualification,
       teachingExperience,
-      salary,
+      salary, // Object: { governmentSalary, schoolSalary }
       joinDate,
       schoolJoinDate,
       bio,
@@ -47,8 +42,9 @@ export const createTeacherWithCredentials = async (
       presentAddress,
       permanentAddress,
       emergencyContact,
-      social,
-      education,
+      social, // Array
+      education, // Array
+      bankAccounts, // Array
       nid,
       birthCertificateNo,
       gender,
@@ -56,42 +52,23 @@ export const createTeacherWithCredentials = async (
       bloodGroup,
       religion,
       maritalStatus,
-      bankName,
-      accountName,
-      accountNumber,
-      branchName,
-      routingNumber,
       employmentType,
     } = payload;
 
-    
-    
-
+    // Check if user exists
     const userExists = await User.findOne({ phone }).session(session);
-
-    
-
     if (userExists) {
       throw new Error("Phone already exists");
     }
 
-    
-
+    // Generate credentials
     const plainPassword = generateDefaultPassword("teacher", phone);
-
-    
-
-    
-
     const teacherId = await generateTeacherID("TCH", session);
-
-    
 
     const userId = new mongoose.Types.ObjectId();
     const teacherObjectId = new mongoose.Types.ObjectId();
 
-    
-
+    // Create User
     const user = new User({
       _id: userId,
       email: email || undefined,
@@ -104,44 +81,31 @@ export const createTeacherWithCredentials = async (
 
     await user.save({ session });
 
-    
-
-    
-
+    // Create Teacher
     const teacher = new Teacher({
       _id: teacherObjectId,
       userId,
       teacherId,
-
-      // ✅ Image
+      indexNumber,
       thumbnail,
-
-      // Personal
       name,
       phone,
-
-      // Professional
       designation,
       department,
       subject,
       qualification,
       teachingExperience,
-      salary,
+      salary, // Object format { governmentSalary, schoolSalary }
       joinDate,
       schoolJoinDate,
       bio,
-
-      // Contact
       alternativePhone,
       presentAddress,
       permanentAddress,
       emergencyContact,
-
-      // Social & Education
       social,
       education,
-
-      // Identity
+      bankAccounts,
       nid,
       birthCertificateNo,
       gender,
@@ -149,39 +113,23 @@ export const createTeacherWithCredentials = async (
       bloodGroup,
       religion,
       maritalStatus,
-
-      // Bank
-      bankName,
-      accountName,
-      accountNumber,
-      branchName,
-      routingNumber,
-
-      // Employment
       employmentType,
     });
 
     await teacher.save({ session });
 
-    
-
-    
-
+    // JWT Handling
     const accessToken = JwtHelpers.generateAccessToken(user);
     const refreshToken = JwtHelpers.generateRefreshToken(user);
 
     user.refreshToken = refreshToken;
-
     await user.save({
       session,
       validateBeforeSave: false,
     });
 
-    
-
     if (!externalSession) {
       await session.commitTransaction();
-      
     }
 
     return {
@@ -198,23 +146,236 @@ export const createTeacherWithCredentials = async (
   } catch (error) {
     console.error("================ ERROR ================");
     console.error(error);
-    console.error(error.stack);
 
     if (session && !externalSession) {
       await session.abortTransaction();
-      
     }
 
     throw error;
   } finally {
     if (session && !externalSession) {
       session.endSession();
-      
     }
-
-    
   }
 };
+
+// import mongoose from "mongoose";
+// import { User } from "../modules/user/user.model.js";
+// import { Teacher } from "../modules/Teacher/Teacher.model.js";
+// import { JwtHelpers } from "./jwtHelpers.js";
+// import generateTeacherID from "./generateTeacherID.js";
+// import generateDefaultPassword from "./generateDefaultPassword.js";
+
+// export const createTeacherWithCredentials = async (
+//   payload,
+//   externalSession = null
+// ) => {
+//   let session;
+
+//   try {
+    
+    
+    
+
+//     if (mongoose.connection.readyState !== 1) {
+//       throw new Error("MongoDB is not connected");
+//     }
+
+//     session = externalSession || (await mongoose.startSession());
+
+    
+
+//     if (!externalSession) {
+//       session.startTransaction();
+      
+//     }
+
+//     const {
+//       thumbnail, // ✅ Added
+//       name,
+//       email,
+//       phone,
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary,
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+//       social,
+//       education,
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+//       bankName,
+//       accountName,
+//       accountNumber,
+//       branchName,
+//       routingNumber,
+//       employmentType,
+//     } = payload;
+
+    
+    
+
+//     const userExists = await User.findOne({ phone }).session(session);
+
+    
+
+//     if (userExists) {
+//       throw new Error("Phone already exists");
+//     }
+
+    
+
+//     const plainPassword = generateDefaultPassword("teacher", phone);
+
+    
+
+    
+
+//     const teacherId = await generateTeacherID("TCH", session);
+
+    
+
+//     const userId = new mongoose.Types.ObjectId();
+//     const teacherObjectId = new mongoose.Types.ObjectId();
+
+    
+
+//     const user = new User({
+//       _id: userId,
+//       email: email || undefined,
+//       phone,
+//       password: plainPassword,
+//       role: "teacher",
+//       profileId: teacherObjectId,
+//       profileModel: "Teacher",
+//     });
+
+//     await user.save({ session });
+
+    
+
+    
+
+//     const teacher = new Teacher({
+//       _id: teacherObjectId,
+//       userId,
+//       teacherId,
+
+//       // ✅ Image
+//       thumbnail,
+
+//       // Personal
+//       name,
+//       phone,
+
+//       // Professional
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary,
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+
+//       // Contact
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+
+//       // Social & Education
+//       social,
+//       education,
+
+//       // Identity
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+
+//       // Bank
+//       bankName,
+//       accountName,
+//       accountNumber,
+//       branchName,
+//       routingNumber,
+
+//       // Employment
+//       employmentType,
+//     });
+
+//     await teacher.save({ session });
+
+    
+
+    
+
+//     const accessToken = JwtHelpers.generateAccessToken(user);
+//     const refreshToken = JwtHelpers.generateRefreshToken(user);
+
+//     user.refreshToken = refreshToken;
+
+//     await user.save({
+//       session,
+//       validateBeforeSave: false,
+//     });
+
+    
+
+//     if (!externalSession) {
+//       await session.commitTransaction();
+      
+//     }
+
+//     return {
+//       success: true,
+//       user,
+//       teacher,
+//       credentials: {
+//         phone,
+//         password: plainPassword,
+//       },
+//       accessToken,
+//       refreshToken,
+//     };
+//   } catch (error) {
+//     console.error("================ ERROR ================");
+//     console.error(error);
+//     console.error(error.stack);
+
+//     if (session && !externalSession) {
+//       await session.abortTransaction();
+      
+//     }
+
+//     throw error;
+//   } finally {
+//     if (session && !externalSession) {
+//       session.endSession();
+      
+//     }
+
+    
+//   }
+// };
 
 // import mongoose from "mongoose";
 // import { User } from "../modules/user/user.model.js";
