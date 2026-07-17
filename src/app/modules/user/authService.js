@@ -11,6 +11,7 @@ import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { getPasswordResetEmailTemplate } from "../../utils/emailTemplates.js";
 import { Teacher } from "../Teacher/Teacher.model.js";
+import { Student } from "../Student/Student.model.js";
 
 
 const registerUser = async ({
@@ -290,6 +291,9 @@ const getMe = async (id) => {
   switch (user.profileModel) {
     case "Teacher":
       profile = await Teacher.findOne({ userId: user._id }).lean();
+      break;
+    case "Student":
+      profile = await Student.findOne({ userId: user._id }).lean();
       break;
     // pore student, guardian etc add korben
     default:
