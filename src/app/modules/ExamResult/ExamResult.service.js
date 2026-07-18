@@ -1,6 +1,7 @@
 
 import { ExamResult } from "./ExamResult.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
+import { Student } from "../Student/Student.model.js";
 
 // Declare the Services 
 
@@ -74,10 +75,48 @@ const deleteExamResult = async (id) => {
     return result;
 }
 
+
+const getStudentResultByStudentId = async (
+  studentId
+) => {
+
+  // প্রথমে student খুঁজবেন
+  const student = await Student.findOne({
+    studentId: studentId
+  });
+
+  console.log(student)
+
+  if (!student) {
+    throw new Error("Student not found");
+  }
+
+
+  // তারপর ExamResult খুঁজবেন
+  const result = await ExamResult.find({
+    studentId: student._id
+  })
+    .populate({
+      path:"studentId",
+      select:"studentId name roll classId sectionId"
+    })
+    .populate("sessionId")
+    .populate("examId")
+    .populate({
+      path:"subjects.subjectId",
+      select:"name code fullMarks passMarks"
+    });
+
+
+  return result;
+};
+
+
 export const ExamResultServices = {
     createExamResult,
     getAllExamResult,
     getSingleExamResult,
     updateExamResult,
-    deleteExamResult
+    deleteExamResult,
+    getStudentResultByStudentId
 }

@@ -9,6 +9,7 @@ const ExamResultSchema = new Schema({
     subjectId: { type: Schema.Types.ObjectId, ref: 'Subject' },
     written: Number,
     mcq: Number,
+    ca: Number,
     practical: Number,
     total: Number,
     fullMarks: Number, // Snapshot

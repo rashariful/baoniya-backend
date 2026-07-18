@@ -70,11 +70,35 @@ const deleteExamResult = catchAsync(async (req, res) => {
   });
 });
 
+
+
+const getStudentResultByStudentId = catchAsync(
+  async (req, res) => {
+
+    const { studentId } = req.params;
+
+
+    const result =
+      await ExamResultServices.getStudentResultByStudentId(
+        studentId
+      );
+
+
+    sendResponse(res, {
+      status: 200,
+      success: true,
+      message: "Student result fetched successfully",
+      data: result
+    });
+
+  }
+);
 export const ExamResultControllers ={
   createExamResult,
   getAllExamResult,
   getSingleExamResult,
   updateExamResult,
-  deleteExamResult
+  deleteExamResult,
+  getStudentResultByStudentId
 
 }

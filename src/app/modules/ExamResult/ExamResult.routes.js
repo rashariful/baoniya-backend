@@ -11,6 +11,12 @@ router.post("/",
 ExamResultControllers.createExamResult);
 router.get("/", 
 ExamResultControllers.getAllExamResult);
+
+router.get(
+  "/student/:studentId",
+  ExamResultControllers.getStudentResultByStudentId
+);
+
 router.get("/:id", 
 ExamResultControllers.getSingleExamResult);
 router.patch("/:id", 
