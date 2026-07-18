@@ -70,11 +70,23 @@ const deleteFees = catchAsync(async (req, res) => {
   });
 });
 
+const getMyFees = catchAsync(async (req, res) => {
+  const result = await FeesServices.getMyFees(req.user.id);
+
+  sendResponse(res, {
+    status: 200,
+    success: true,
+    message: "My fees retrieved successfully",
+    data: result,
+  });
+});
+
 export const FeesControllers ={
   createFees,
   getAllFees,
   getSingleFees,
   updateFees,
-  deleteFees
+  deleteFees,
+  getMyFees
 
 }

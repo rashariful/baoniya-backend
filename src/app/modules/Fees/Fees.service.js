@@ -1,5 +1,6 @@
 import { Fees } from "./Fees.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
+import { Student } from "../Student/Student.model.js";
 
 // Declare the Services
 const createFees = async (payload) => {
@@ -8,8 +9,6 @@ const createFees = async (payload) => {
 };
 
 
-
-export default createFees;
 const getAllFees = async (query) => {
   const FeesSearchableFields = [];
   const resultQuery = new QueryBuilder(Fees.find().populate("studentId"), query)
@@ -43,10 +42,48 @@ const deleteFees = async (id) => {
   return result;
 };
 
+
+
+
+
+const getMyFees = async (userId) => {
+  const student = await Student.findOne({ userId });
+
+  if (!student) {
+    throw new Error("Student not found");
+  }
+
+  const fees = await Fees.find({ studentId: student._id })
+    .sort({ createdAt: -1 });
+
+  const summary = fees.reduce(
+    (acc, fee) => {
+      acc.totalFees += fee.amount;
+      acc.totalPaid += fee.paidAmount;
+      acc.totalDue += fee.dueAmount;
+      return acc;
+    },
+    {
+      totalFees: 0,
+      totalPaid: 0,
+      totalDue: 0,
+      totalReceipts: fees.length,
+    }
+  );
+
+  return {
+    student,
+    summary,
+    history: fees,
+  };
+};
+
+
 export const FeesServices = {
   createFees,
   getAllFees,
   getSingleFees,
   updateFees,
   deleteFees,
+  getMyFees
 };

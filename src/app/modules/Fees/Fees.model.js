@@ -5,16 +5,19 @@ const FeeItemSchema = new Schema(
     feeHead: {
       type: String,
       required: true,
+      trim: true,
     },
-       // Receipt Months
-    month: 
-      {
-        type: String,
-      },
-    
+
+    // Receipt Month
+    month: {
+      type: String,
+      required: true,
+    },
+
     amount: {
       type: Number,
       required: true,
+      min: 0,
     },
   },
   { _id: false }
@@ -28,34 +31,36 @@ const FeesSchema = new Schema(
       required: true,
     },
 
-    // Multiple Fee Heads
+    // Fee Heads
     feeItems: {
       type: [FeeItemSchema],
       default: [],
     },
 
-    // Grand Total
+    // Receipt Total
     amount: {
       type: Number,
-      required: true,
       default: 0,
+      min: 0,
     },
 
+    // Paid in this receipt
     paidAmount: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
+    // Remaining due of this receipt
     dueAmount: {
       type: Number,
       default: 0,
+      min: 0,
     },
-
-
 
     status: {
       type: String,
-      enum: ["paid", "unpaid", "partial"],
+      enum: ["paid", "partial", "unpaid"],
       default: "unpaid",
     },
   },
@@ -64,26 +69,31 @@ const FeesSchema = new Schema(
   }
 );
 
-// Auto Calculate
 FeesSchema.pre("save", function (next) {
-  // Calculate total amount from feeItems
-  if (this.feeItems && this.feeItems.length > 0) {
-    this.amount = this.feeItems.reduce((sum, item) => {
-      return sum + Number(item.amount || 0);
-    }, 0);
+  // Calculate receipt total
+  this.amount = this.feeItems.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+
+  // Prevent negative values
+  this.paidAmount = Math.max(Number(this.paidAmount) || 0, 0);
+
+  // Validation
+  if (this.paidAmount > this.amount) {
+    return next(
+      new Error("Paid amount cannot be greater than total amount.")
+    );
   }
 
-  const amount = Number(this.amount) || 0;
-  const paidAmount = Number(this.paidAmount) || 0;
+  this.dueAmount = this.amount - this.paidAmount;
 
-  this.dueAmount = Math.max(amount - paidAmount, 0);
-
-  if (this.dueAmount === 0 && paidAmount > 0) {
-    this.status = "paid";
-  } else if (paidAmount > 0 && this.dueAmount > 0) {
-    this.status = "partial";
-  } else {
+  if (this.paidAmount === 0) {
     this.status = "unpaid";
+  } else if (this.dueAmount === 0) {
+    this.status = "paid";
+  } else {
+    this.status = "partial";
   }
 
   next();
@@ -91,58 +101,3 @@ FeesSchema.pre("save", function (next) {
 
 export const Fees =
   mongoose.models.Fees || mongoose.model("Fees", FeesSchema);
-
-// import mongoose, { Schema } from "mongoose";
-
-// const FeesSchema = new Schema(
-//   {
-//     studentId: {
-//       type: Schema.Types.ObjectId,
-//       ref: "Student",
-//       required: true,
-//     },
-//     amount: {
-//       type: Number,
-//       required: true,
-//     },
-//     paidAmount: {
-//       type: Number,
-//       default: 0,
-//     },
-//     dueAmount: {
-//       type: Number,
-//       default: 0,
-//     },
-//     month: {
-//       type: String,
-//       required: true,
-//     },
-//     status: {
-//       type: String,
-//       enum: ["paid", "unpaid", "partial"],
-//       default: "unpaid",
-//     },
-//   },
-//   { timestamps: true }
-// );
-
-// // auto-calculate dueAmount + status before save (create & save())
-// FeesSchema.pre("save", function (next) {
-//   const amount = Number(this.amount) || 0;
-//   const paidAmount = Number(this.paidAmount) || 0;
-
-//   this.dueAmount = Math.max(amount - paidAmount, 0);
-
-//   if (this.dueAmount === 0 && paidAmount > 0) {
-//     this.status = "paid";
-//   } else if (paidAmount > 0 && this.dueAmount > 0) {
-//     this.status = "partial";
-//   } else {
-//     this.status = "unpaid";
-//   }
-
-//   next();
-// });
-
-// export const Fees =
-//   mongoose.models.Fees || mongoose.model("Fees", FeesSchema);

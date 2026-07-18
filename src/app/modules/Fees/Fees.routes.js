@@ -1,3 +1,4 @@
+import { verifyRole, verifyToken } from "../../middlewares/authMiddleware.js";
 
 import express from "express";
 
@@ -9,6 +10,11 @@ const router = express.Router();
 
 router.post("/", 
 FeesControllers.createFees);
+router.get(
+  "/my-fees",
+  verifyToken,
+  FeesControllers.getMyFees
+);
 router.get("/", 
 FeesControllers.getAllFees);
 router.get("/:id", 
