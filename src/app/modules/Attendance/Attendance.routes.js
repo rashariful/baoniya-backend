@@ -13,7 +13,7 @@ router.post("/check-in", AttendanceControllers.selfCheckIn);
 
 // Fingerprint/Face device theke asha attendance -> Phase 2 (device lagle eta use hobe)
 router.post("/device-checkin", AttendanceControllers.deviceCheckIn);
-
+router.get("/all", AttendanceControllers.getAllAttendanceAll);
 // Get all (with filters via query params)
 router.get("/", AttendanceControllers.getAllAttendance);
 

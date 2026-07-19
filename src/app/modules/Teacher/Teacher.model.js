@@ -85,7 +85,11 @@ const TeacherSchema = new Schema(
     
     // Updated Salary field
     salary: SalarySchema, 
-
+deviceUserId: {
+  type: String,
+  default: null,
+  index: true,
+},
     joinDate: { type: Date },
     schoolJoinDate: { type: Date },
     bio: { type: String },

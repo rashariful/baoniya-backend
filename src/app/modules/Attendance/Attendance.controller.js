@@ -95,6 +95,29 @@ const syncDeviceAttendance = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+
+// attendance.controller.js
+const getAllAttendanceAll = catchAsync(async (req, res) => {
+  const filters = {
+    userId: req.query.userId,
+    status: req.query.status,
+    source: req.query.source,
+    date: req.query.date,           // single date: "2026-07-18"
+    startDate: req.query.startDate, // range: "2026-07-01"
+    endDate: req.query.endDate,     // range: "2026-07-18"
+  };
+
+  const result = await AttendanceServices.getAllAttendanceAll(filters);
+
+  res.status(200).json({
+    success: true,
+    message: "Attendance fetched successfully",
+    data: result,
+  });
+});
+
+
 export const AttendanceControllers = {
   createAttendance,
   selfCheckIn,
@@ -103,7 +126,8 @@ export const AttendanceControllers = {
   getSingleAttendance,
   updateAttendance,
   deleteAttendance,
-  syncDeviceAttendance
+  syncDeviceAttendance,
+  getAllAttendanceAll
 };
 
 
