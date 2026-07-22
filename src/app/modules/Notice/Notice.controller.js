@@ -1,15 +1,10 @@
-
 import catchAsync from "../../utils/catchAsync.js";
-import { 
-  NoticeServices
- } from "./Notice.service.js";
+import { NoticeServices } from "./Notice.service.js";
 import sendResponse from "../../utils/sendResponse.js";
-
 
 // Create Notice
 const createNotice = catchAsync(async (req, res) => {
-  const result = await 
-  NoticeServices.createNotice(req.body);
+  const result = await NoticeServices.createNotice(req.file, req.body);
   sendResponse(res, {
     status: 201,
     success: true,
@@ -20,8 +15,7 @@ const createNotice = catchAsync(async (req, res) => {
 
 // Get all Notice
 const getAllNotice = catchAsync(async (req, res) => {
-  const result = await 
-  NoticeServices.getAllNotice(req.query);
+  const result = await NoticeServices.getAllNotice(req.query);
   sendResponse(res, {
     status: 200,
     success: true,
@@ -34,8 +28,7 @@ const getAllNotice = catchAsync(async (req, res) => {
 // Get single Notice
 const getSingleNotice = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await 
-  NoticeServices.getSingleNotice(id);
+  const result = await NoticeServices.getSingleNotice(id);
   sendResponse(res, {
     status: 200,
     success: true,
@@ -47,8 +40,7 @@ const getSingleNotice = catchAsync(async (req, res) => {
 // Update Notice
 const updateNotice = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await 
-  NoticeServices.updateNotice(id, req.body);
+  const result = await NoticeServices.updateNotice(id, req.file, req.body);
   sendResponse(res, {
     status: 200,
     success: true,
@@ -60,8 +52,7 @@ const updateNotice = catchAsync(async (req, res) => {
 // Delete Notice
 const deleteNotice = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await 
-  NoticeServices.deleteNotice(id);
+  const result = await NoticeServices.deleteNotice(id);
   sendResponse(res, {
     status: 200,
     success: true,
@@ -70,11 +61,10 @@ const deleteNotice = catchAsync(async (req, res) => {
   });
 });
 
-export const NoticeControllers ={
+export const NoticeControllers = {
   createNotice,
   getAllNotice,
   getSingleNotice,
   updateNotice,
-  deleteNotice
-
-}
+  deleteNotice,
+};

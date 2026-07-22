@@ -108,13 +108,13 @@ deviceUserId: {
 
     employmentType: {
       type: String,
-      enum: ["Permanent", "Contract", "Part Time"],
-      default: "Permanent",
+      enum: ["permanent", "contract", "part time"],
+      default: "permanent",
     },
 
     status: {
       type: String,
-      enum: ["Active", "Inactive", "Resigned"],
+      enum: ["active", "inactive", "resigned"],
       default: "Active",
     },
 

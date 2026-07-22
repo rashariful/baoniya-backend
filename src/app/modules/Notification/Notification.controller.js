@@ -102,7 +102,32 @@ const broadcastToDueFees = catchAsync(async (req, res) => {
   });
 });
 
+
+const getStudentRecipients = async (req, res, next) => {
+  try {
+    const { classId, search } = req.query;
+    const data = await NotificationServices.getStudentRecipients({ classId, search });
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTeacherRecipients = async (req, res, next) => {
+  try {
+    const { search } = req.query;
+    const data = await NotificationServices.getTeacherRecipients({ search });
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
 export const NotificationControllers = {
+  getStudentRecipients,
+  getTeacherRecipients,
   createNotification,
   getAllNotification,
   getSingleNotification,

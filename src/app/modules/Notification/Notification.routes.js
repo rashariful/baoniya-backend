@@ -11,6 +11,9 @@ router.get("/:id", NotificationControllers.getSingleNotification);
 router.patch("/:id", NotificationControllers.updateNotification);
 router.delete("/:id", NotificationControllers.deleteNotification);
 
+router.get("/recipients/students", NotificationControllers.getStudentRecipients);
+router.get("/recipients/teachers", NotificationControllers.getTeacherRecipients);
+
 // ===== NEW: Broadcast routes =====
 router.post(
   "/broadcast/all",

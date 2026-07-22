@@ -3,6 +3,7 @@ import { SmsSender } from "../../middlewares/smsSender.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { Student } from "../Student/Student.model.js";
 import { Fees } from "../fees/Fees.model.js";
+import { Teacher } from "../Teacher/Teacher.model.js";
 
 // ============================
 // Existing CRUD (unchanged)
@@ -172,6 +173,70 @@ const broadcastToDueFees = async (message, month, sentBy) => {
   return notification;
 };
 
+// import { Teacher } from "../Teacher/Teacher.model.js"; // path adjust koro
+
+// ============================
+// Recipient list — students grouped by class (SMS sender UI)
+// ============================
+const getStudentRecipients = async ({ classId, search } = {}) => {
+  const filter = { status: "active" };
+  if (classId) filter.classId = classId;
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { studentId: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const students = await Student.find(filter)
+    .populate("classId", "name code")
+    .select("name studentId roll guardianName guardianPhone classId sectionId")
+    .sort({ name: 1 })
+    .lean();
+
+  const grouped = {};
+  for (const s of students) {
+    const className = s.classId?.name || "Unassigned";
+    if (!grouped[className]) grouped[className] = [];
+    grouped[className].push({
+      id: s._id,
+      name: s.name,
+      studentId: s.studentId,
+      roll: s.roll,
+      guardianName: s.guardianName,
+      phone: s.guardianPhone,
+    });
+  }
+
+  return grouped;
+};
+
+// ============================
+// Recipient list — teachers
+// ============================
+const getTeacherRecipients = async ({ search } = {}) => {
+  const filter = { status: "Active" }; // ⚠️ Teacher schema e capital "Active"
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { teacherId: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const teachers = await Teacher.find(filter)
+    .select("name phone teacherId designation")
+    .sort({ name: 1 })
+    .lean();
+
+  return teachers.map((t) => ({
+    id: t._id,
+    name: t.name,
+    phone: t.phone,
+    teacherId: t.teacherId,
+    designation: t.designation,
+  }));
+};
+
 export const NotificationServices = {
   createNotification,
   getAllNotification,
@@ -181,4 +246,7 @@ export const NotificationServices = {
   broadcastToAll,
   broadcastToSelected,
   broadcastToDueFees,
+  getStudentRecipients,   // ✅ new
+  getTeacherRecipients,   // ✅ new
 };
+
