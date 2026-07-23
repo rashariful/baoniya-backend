@@ -54,6 +54,25 @@ const getSingleTeacher = async (id) => {
 }
 const updateTeacher = async (id, file, payload) => {
   try {
+    // FormData theke ashle ei fields gula JSON string hishebe thake — parse kore real object/array banate hobe
+    const jsonFields = [
+      "salary",
+      "emergencyContact",
+      "social",
+      "education",
+      "bankAccounts",
+    ];
+
+    jsonFields.forEach((field) => {
+      if (payload[field] !== undefined && typeof payload[field] === "string") {
+        try {
+          payload[field] = JSON.parse(payload[field]);
+        } catch (err) {
+          throw new Error(`Invalid JSON format for field: ${field}`);
+        }
+      }
+    });
+
     if (file?.buffer) {
       const imageName = `teacher-${Date.now()}`;
       const { secure_url } = await sendImageToCloudinary(
@@ -69,11 +88,37 @@ const updateTeacher = async (id, file, payload) => {
       runValidators: true,
     });
 
+    if (!result) {
+      throw new Error("Teacher not found");
+    }
+
     return result;
   } catch (error) {
     throw new Error(error.message);
   }
 };
+// const updateTeacher = async (id, file, payload) => {
+//   try {
+//     if (file?.buffer) {
+//       const imageName = `teacher-${Date.now()}`;
+//       const { secure_url } = await sendImageToCloudinary(
+//         imageName,
+//         file.buffer
+//       );
+
+//       payload.thumbnail = secure_url;
+//     }
+
+//     const result = await Teacher.findByIdAndUpdate(id, payload, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     return result;
+//   } catch (error) {
+//     throw new Error(error.message);
+//   }
+// };
 
 const deleteTeacher = async (id) => {
     const result = await Teacher.findByIdAndDelete(id);
