@@ -2,8 +2,9 @@ import { Notification } from "./Notification.model.js";
 import { SmsSender } from "../../middlewares/smsSender.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { Student } from "../Student/Student.model.js";
-import { Fees } from "../fees/Fees.model.js";
+// import { Fees } from "../fees/Fees.model.js";
 import { Teacher } from "../Teacher/Teacher.model.js";
+import { Fees } from "../Fees/Fees.model.js";
 
 // ============================
 // Existing CRUD (unchanged)
@@ -215,7 +216,7 @@ const getStudentRecipients = async ({ classId, search } = {}) => {
 // Recipient list — teachers
 // ============================
 const getTeacherRecipients = async ({ search } = {}) => {
-  const filter = { status: "Active" }; // ⚠️ Teacher schema e capital "Active"
+  const filter = { status: "active" }; // ⚠️ Teacher schema e capital "Active"
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },

@@ -115,7 +115,7 @@ deviceUserId: {
     status: {
       type: String,
       enum: ["active", "inactive", "resigned"],
-      default: "Active",
+      default: "active",
     },
 
     isActive: { type: Boolean, default: true },
