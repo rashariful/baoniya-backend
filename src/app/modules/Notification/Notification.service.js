@@ -174,7 +174,6 @@ const broadcastToDueFees = async (message, month, sentBy) => {
   return notification;
 };
 
-// import { Teacher } from "../Teacher/Teacher.model.js"; // path adjust koro
 
 // ============================
 // Recipient list — students grouped by class (SMS sender UI)
@@ -195,10 +194,58 @@ const getStudentRecipients = async ({ classId, search } = {}) => {
     .sort({ name: 1 })
     .lean();
 
+  const studentIds = students.map((s) => s._id);
+
+  // Fees breakdown per student — total due + overall status
+  const dueAgg = await Fees.aggregate([
+    { $match: { studentId: { $in: studentIds } } },
+    {
+      $group: {
+        _id: "$studentId",
+        totalAmount: { $sum: "$amount" },
+        totalPaid: { $sum: "$paidAmount" },
+        totalDue: { $sum: "$dueAmount" },
+        unpaidCount: {
+          $sum: { $cond: [{ $eq: ["$status", "unpaid"] }, 1, 0] },
+        },
+        partialCount: {
+          $sum: { $cond: [{ $eq: ["$status", "partial"] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+
+  const dueMap = {};
+  for (const d of dueAgg) {
+    let feeStatus;
+    if (d.totalDue === 0) {
+      feeStatus = "paid";
+    } else if (d.partialCount > 0 || d.totalPaid > 0) {
+      feeStatus = "partial";
+    } else {
+      feeStatus = "unpaid";
+    }
+
+    dueMap[d._id.toString()] = {
+      due: d.totalDue,
+      paid: d.totalPaid,
+      total: d.totalAmount,
+      feeStatus, // "paid" | "partial" | "unpaid"
+    };
+  }
+
   const grouped = {};
   for (const s of students) {
     const className = s.classId?.name || "Unassigned";
     if (!grouped[className]) grouped[className] = [];
+
+    const feeInfo = dueMap[s._id.toString()] || {
+      due: 0,
+      paid: 0,
+      total: 0,
+      feeStatus: "unpaid", // no fee record found — treat as unpaid, adjust jodi na lage
+    };
+
     grouped[className].push({
       id: s._id,
       name: s.name,
@@ -206,11 +253,48 @@ const getStudentRecipients = async ({ classId, search } = {}) => {
       roll: s.roll,
       guardianName: s.guardianName,
       phone: s.guardianPhone,
+      due: feeInfo.due,
+      paid: feeInfo.paid,
+      total: feeInfo.total,
+      feeStatus: feeInfo.feeStatus,
     });
   }
 
   return grouped;
 };
+
+// const getStudentRecipients = async ({ classId, search } = {}) => {
+//   const filter = { status: "active" };
+//   if (classId) filter.classId = classId;
+//   if (search) {
+//     filter.$or = [
+//       { name: { $regex: search, $options: "i" } },
+//       { studentId: { $regex: search, $options: "i" } },
+//     ];
+//   }
+
+//   const students = await Student.find(filter)
+//     .populate("classId", "name code")
+//     .select("name studentId roll guardianName guardianPhone classId sectionId")
+//     .sort({ name: 1 })
+//     .lean();
+
+//   const grouped = {};
+//   for (const s of students) {
+//     const className = s.classId?.name || "Unassigned";
+//     if (!grouped[className]) grouped[className] = [];
+//     grouped[className].push({
+//       id: s._id,
+//       name: s.name,
+//       studentId: s.studentId,
+//       roll: s.roll,
+//       guardianName: s.guardianName,
+//       phone: s.guardianPhone,
+//     });
+//   }
+
+//   return grouped;
+// };
 
 // ============================
 // Recipient list — teachers
