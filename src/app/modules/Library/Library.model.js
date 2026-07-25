@@ -1,10 +1,26 @@
-
-import {Schema, model} from "mongoose";
+import { Schema, model } from "mongoose";
 
 // Declare the Schema of the Mongo model
 const LibrarySchema = new Schema(
   {
-    // Define the schema fields
+    bookName: {
+      type: String,
+      required: true,
+    },
+    student: {
+      type: Schema.Types.ObjectId,
+      ref: "Student",
+      required: false,
+    },
+    returnDate: {
+      type: Date,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["borrowed", "returned", "overdue"],
+      default: "borrowed",
+    },
   },
   {
     timestamps: true,

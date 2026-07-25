@@ -12,6 +12,11 @@ const ClassesSchema = new Schema(
 );
  
 export const Classes = model("Classes", ClassesSchema);
+
+
+
+
+
 // import { Schema, model } from "mongoose";
 
 // const ClassesSchema = new Schema(
