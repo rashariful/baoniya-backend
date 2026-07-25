@@ -28,6 +28,7 @@ import { StudentAcademicRecordRoutes } from "../modules/StudentAcademicRecord/St
 import { GalleryRoutes } from "../modules/Gallery/Gallery.routes.js";
 import { NotificationRoutes } from "../modules/Notification/Notification.routes.js";
 import { AssetRoutes } from "../modules/Asset/Asset.routes.js";
+import { LibraryRoutes } from "../modules/Library/Library.routes.js";
 
 
 const router = Router();
@@ -51,6 +52,10 @@ const moduleRoutes = [
   {
     path: "/asset",
     route: AssetRoutes
+  },
+  {
+    path: "/libarary",
+    route: LibraryRoutes
   },
   {
     path: "/admission",
