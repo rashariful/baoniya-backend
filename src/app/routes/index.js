@@ -29,6 +29,10 @@ import { GalleryRoutes } from "../modules/Gallery/Gallery.routes.js";
 import { NotificationRoutes } from "../modules/Notification/Notification.routes.js";
 import { AssetRoutes } from "../modules/Asset/Asset.routes.js";
 import { LibraryRoutes } from "../modules/Library/Library.routes.js";
+import { FinalResultRoutes } from "../modules/FinalResult/FinalResult.routes.js";
+import { GradingScaleRoutes } from "../modules/GradingScale/GradingScale.routes.js";
+import { ClassGroupRoutes } from "../modules/ClassGroup/ClassGroup.routes.js";
+
 
 
 const router = Router();
@@ -44,6 +48,18 @@ const moduleRoutes = [
   {
     path: "/banner",
     route: BannerRoutes
+  },
+  {
+    path: "/fnal-result",
+    route: FinalResultRoutes
+  },
+  {
+    path: "/grading-scale",
+    route: GradingScaleRoutes
+  },
+  {
+    path: "/class-group",
+    route: ClassGroupRoutes
   },
   {
     path: "/gallery",
