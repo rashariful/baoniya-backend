@@ -23,14 +23,6 @@ const AssetSchema = new Schema(
       enum: ['available', 'not_available', 'damaged', 'in_repair'],
       default: 'available',
     },
-    room: {
-      type: String, // kon room/floor e ache
-      trim: true,
-    },
-    remarks: {
-      type: String,
-      trim: true,
-    },
   },
   { timestamps: true }
 );

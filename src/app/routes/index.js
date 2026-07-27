@@ -70,7 +70,7 @@ const moduleRoutes = [
     route: AssetRoutes
   },
   {
-    path: "/libarary",
+    path: "/library",
     route: LibraryRoutes
   },
   {
