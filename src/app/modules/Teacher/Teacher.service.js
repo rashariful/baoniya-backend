@@ -1,8 +1,8 @@
 
 import { Teacher } from "./Teacher.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
-import { createTeacherWithCredentials } from "../../utils/teacher.utils.js";
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
+import { createTeacherWithCredentials } from "./teacher.utils.js";
 
 // Declare the Services 
 

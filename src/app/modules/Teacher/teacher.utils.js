@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { User } from "../modules/user/user.model.js";
-import { Teacher } from "../modules/Teacher/Teacher.model.js";
-import { JwtHelpers } from "./jwtHelpers.js";
-import generateTeacherID from "./generateTeacherID.js";
-import generateDefaultPassword from "./generateDefaultPassword.js";
+import { User } from "../user/user.model.js";
+import { Teacher } from "./Teacher.model.js";
+import { JwtHelpers } from "../../utils/jwtHelpers.js";
+import generateTeacherID from "../../utils/generateTeacherID.js";
+import generateDefaultPassword from "../../utils/generateDefaultPassword.js";
 
 export const createTeacherWithCredentials = async (
   payload,
