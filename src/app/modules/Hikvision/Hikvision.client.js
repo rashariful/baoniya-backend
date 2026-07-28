@@ -1,3 +1,96 @@
+// import axios from "axios";
+// import DigestFetch from "digest-fetch";
+// import { Device } from "../Device/Device.model.js";
+// // import { Device } from "../Device/Device.model.js";
+
+// // Ekta device-er info diye client banano (multi-device support)
+// const getClient = async (deviceId) => {
+//   const device = await Device.findOne({ deviceId });
+//   if (!device) throw new Error(`Device not found: ${deviceId}`);
+
+//   const client = new DigestFetch(device.username, device.password);
+//   const baseUrl = `http://${device.ip}:${device.port}`;
+
+//   return { client, baseUrl, device };
+// };
+
+// // User create
+// export const createHikvisionUser = async (deviceId, { employeeNo, name }) => {
+//   const { client, baseUrl } = await getClient(deviceId);
+
+//   const body = {
+//     UserInfo: {
+//       employeeNo,
+//       name,
+//       userType: "normal",
+//       Valid: {
+//         enable: true,
+//         beginTime: "2024-01-01T00:00:00",
+//         endTime: "2034-12-31T23:59:59",
+//       },
+//     },
+//   };
+
+//   const res = await client.fetch(
+//     `${baseUrl}/ISAPI/AccessControl/UserInfo/Record?format=json`,
+//     {
+//       method: "PUT",
+//       body: JSON.stringify(body),
+//     }
+//   );
+
+//   const data = await res.json();
+//   if (data.statusCode !== 1) {
+//     throw new Error(`Hikvision create failed: ${data.errorMsg || JSON.stringify(data)}`);
+//   }
+//   return data;
+// };
+
+// // User update
+// export const updateHikvisionUser = async (deviceId, { employeeNo, name }) => {
+//   const { client, baseUrl } = await getClient(deviceId);
+
+//   const body = {
+//     UserInfo: { employeeNo, name },
+//   };
+
+//   const res = await client.fetch(
+//     `${baseUrl}/ISAPI/AccessControl/UserInfo/Modify?format=json`,
+//     { method: "PUT", body: JSON.stringify(body) }
+//   );
+
+//   const data = await res.json();
+//   if (data.statusCode !== 1) {
+//     throw new Error(`Hikvision update failed: ${data.errorMsg || JSON.stringify(data)}`);
+//   }
+//   return data;
+// };
+
+// // User delete
+// export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
+//   const { client, baseUrl } = await getClient(deviceId);
+
+//   const body = {
+//     UserInfoDetail: {
+//       mode: "byEmployeeNo",
+//       EmployeeNoList: [{ employeeNo }],
+//     },
+//   };
+
+//   const res = await client.fetch(
+//     `${baseUrl}/ISAPI/AccessControl/UserInfo/Delete?format=json`,
+//     { method: "PUT", body: JSON.stringify(body) }
+//   );
+
+//   const data = await res.json();
+//   if (data.statusCode !== 1) {
+//     throw new Error(`Hikvision delete failed: ${data.errorMsg || JSON.stringify(data)}`);
+//   }
+//   return data;
+// };
+
+
+
 import DigestFetch from "digest-fetch";
 
 const DEVICE_IP = process.env.HIK_DEVICE_IP;

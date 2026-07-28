@@ -125,6 +125,18 @@ deviceUserId: {
 
 export const Teacher = model("Teacher", TeacherSchema);
 
+
+
+
+
+
+
+
+
+
+
+
+
 // import { Schema, model } from "mongoose";
 
 // const EducationSchema = new Schema(

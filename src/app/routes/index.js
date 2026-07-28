@@ -32,6 +32,8 @@ import { LibraryRoutes } from "../modules/Library/Library.routes.js";
 import { FinalResultRoutes } from "../modules/FinalResult/FinalResult.routes.js";
 import { GradingScaleRoutes } from "../modules/GradingScale/GradingScale.routes.js";
 import { ClassGroupRoutes } from "../modules/ClassGroup/ClassGroup.routes.js";
+import { SyncQueueRoutes } from "../modules/SyncQueue/SyncQueue.routes.js";
+import { DeviceRoutes } from "../modules/Device/Device.routes.js";
 
 
 
@@ -70,8 +72,16 @@ const moduleRoutes = [
     route: AssetRoutes
   },
   {
-    path: "/libarary",
+    path: "/library",
     route: LibraryRoutes
+  },
+  {
+    path: "/sync",
+    route: SyncQueueRoutes
+  },
+  {
+    path: "/device",
+    route: DeviceRoutes
   },
   {
     path: "/admission",
