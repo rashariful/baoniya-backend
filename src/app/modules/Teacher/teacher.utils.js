@@ -4,6 +4,9 @@ import { Teacher } from "./Teacher.model.js";
 import { JwtHelpers } from "../../utils/jwtHelpers.js";
 import generateTeacherID from "../../utils/generateTeacherID.js";
 import generateDefaultPassword from "../../utils/generateDefaultPassword.js";
+import { createHikvisionUser } from "../Hikvision/hikvision.client.js";
+
+const DEFAULT_DEVICE_ID = process.env.DEFAULT_HIKVISION_DEVICE_ID || "hik-device-1";
 
 export const createTeacherWithCredentials = async (
   payload,
@@ -22,19 +25,18 @@ export const createTeacherWithCredentials = async (
       session.startTransaction();
     }
 
-    // Payload Destructuring
     const {
       thumbnail,
       name,
       email,
       phone,
-      indexNumber, // Added
+      indexNumber,
       designation,
       department,
       subject,
       qualification,
       teachingExperience,
-      salary, // Object: { governmentSalary, schoolSalary }
+      salary,
       joinDate,
       schoolJoinDate,
       bio,
@@ -42,9 +44,9 @@ export const createTeacherWithCredentials = async (
       presentAddress,
       permanentAddress,
       emergencyContact,
-      social, // Array
-      education, // Array
-      bankAccounts, // Array
+      social,
+      education,
+      bankAccounts,
       nid,
       birthCertificateNo,
       gender,
@@ -55,20 +57,17 @@ export const createTeacherWithCredentials = async (
       employmentType,
     } = payload;
 
-    // Check if user exists
     const userExists = await User.findOne({ phone }).session(session);
     if (userExists) {
       throw new Error("Phone already exists");
     }
 
-    // Generate credentials
     const plainPassword = generateDefaultPassword("teacher", phone);
     const teacherId = await generateTeacherID("TCH", session);
 
     const userId = new mongoose.Types.ObjectId();
     const teacherObjectId = new mongoose.Types.ObjectId();
 
-    // Create User
     const user = new User({
       _id: userId,
       email: email || undefined,
@@ -81,7 +80,6 @@ export const createTeacherWithCredentials = async (
 
     await user.save({ session });
 
-    // Create Teacher
     const teacher = new Teacher({
       _id: teacherObjectId,
       userId,
@@ -95,7 +93,7 @@ export const createTeacherWithCredentials = async (
       subject,
       qualification,
       teachingExperience,
-      salary, // Object format { governmentSalary, schoolSalary }
+      salary,
       joinDate,
       schoolJoinDate,
       bio,
@@ -118,7 +116,6 @@ export const createTeacherWithCredentials = async (
 
     await teacher.save({ session });
 
-    // JWT Handling
     const accessToken = JwtHelpers.generateAccessToken(user);
     const refreshToken = JwtHelpers.generateRefreshToken(user);
 
@@ -130,6 +127,26 @@ export const createTeacherWithCredentials = async (
 
     if (!externalSession) {
       await session.commitTransaction();
+    }
+
+    // ---------------------------------------------------------
+    // Hikvision sync (transaction-er BAIRE, non-blocking)
+    // Device fail hoile teacher creation fail hobe na
+    // ---------------------------------------------------------
+    try {
+      const hikResult = await createHikvisionUser(DEFAULT_DEVICE_ID, {
+        employeeNo: teacherId,
+        name,
+      });
+
+      // Response theke employeeNo ba id assign kora
+      teacher.deviceUserId = hikResult?.employeeNo || teacherId;
+      await teacher.save();
+    } catch (syncError) {
+      console.error(
+        `[Hikvision Sync Failed] teacherId=${teacherId}:`,
+        syncError.message
+      );
     }
 
     return {
@@ -158,6 +175,347 @@ export const createTeacherWithCredentials = async (
     }
   }
 };
+
+// import mongoose from "mongoose";
+// import { User } from "../user/user.model.js";
+// import { Teacher } from "./Teacher.model.js";
+// import { JwtHelpers } from "../../utils/jwtHelpers.js";
+// import generateTeacherID from "../../utils/generateTeacherID.js";
+// import generateDefaultPassword from "../../utils/generateDefaultPassword.js";
+// import { createHikvisionUser } from "../Hikvision/hikvision.client.js";
+
+// const DEFAULT_DEVICE_ID = process.env.DEFAULT_HIKVISION_DEVICE_ID || "hik-device-1";
+
+// export const createTeacherWithCredentials = async (
+//   payload,
+//   externalSession = null
+// ) => {
+//   let session;
+
+//   try {
+//     if (mongoose.connection.readyState !== 1) {
+//       throw new Error("MongoDB is not connected");
+//     }
+
+//     session = externalSession || (await mongoose.startSession());
+
+//     if (!externalSession) {
+//       session.startTransaction();
+//     }
+
+//     const {
+//       thumbnail,
+//       name,
+//       email,
+//       phone,
+//       indexNumber,
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary,
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+//       social,
+//       education,
+//       bankAccounts,
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+//       employmentType,
+//     } = payload;
+
+//     const userExists = await User.findOne({ phone }).session(session);
+//     if (userExists) {
+//       throw new Error("Phone already exists");
+//     }
+
+//     const plainPassword = generateDefaultPassword("teacher", phone);
+//     const teacherId = await generateTeacherID("TCH", session);
+
+//     const userId = new mongoose.Types.ObjectId();
+//     const teacherObjectId = new mongoose.Types.ObjectId();
+
+//     const user = new User({
+//       _id: userId,
+//       email: email || undefined,
+//       phone,
+//       password: plainPassword,
+//       role: "teacher",
+//       profileId: teacherObjectId,
+//       profileModel: "Teacher",
+//     });
+
+//     await user.save({ session });
+
+//     const teacher = new Teacher({
+//       _id: teacherObjectId,
+//       userId,
+//       teacherId,
+//       indexNumber,
+//       thumbnail,
+//       name,
+//       phone,
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary,
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+//       hikResult,
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+//       social,
+//       education,
+//       bankAccounts,
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+//       employmentType,
+//     });
+
+//     await teacher.save({ session });
+
+//     const accessToken = JwtHelpers.generateAccessToken(user);
+//     const refreshToken = JwtHelpers.generateRefreshToken(user);
+
+//     user.refreshToken = refreshToken;
+//     await user.save({
+//       session,
+//       validateBeforeSave: false,
+//     });
+
+//     if (!externalSession) {
+//       await session.commitTransaction();
+//     }
+
+//     // ---------------------------------------------------------
+//     // Hikvision sync (transaction-er BAIRE, non-blocking)
+//     // Device fail hoile teacher creation fail hobe na
+//     // ---------------------------------------------------------
+//     try {
+//       await createHikvisionUser(DEFAULT_DEVICE_ID, {
+//         employeeNo: teacherId,
+//         name,
+//       });
+
+//       // teacher.deviceUserId = teacherId;
+//             teacher.deviceUserId = hikResult.employeeNo;
+
+//       await teacher.save();
+//     } catch (syncError) {
+//       console.error(
+//         `[Hikvision Sync Failed] teacherId=${teacherId}:`,
+//         syncError.message
+//       );
+//     }
+
+//     return {
+//       success: true,
+//       user,
+//       teacher,
+//       credentials: {
+//         phone,
+//         password: plainPassword,
+//       },
+//       accessToken,
+//       refreshToken,
+//     };
+//   } catch (error) {
+//     console.error("================ ERROR ================");
+//     console.error(error);
+
+//     if (session && !externalSession) {
+//       await session.abortTransaction();
+//     }
+
+//     throw error;
+//   } finally {
+//     if (session && !externalSession) {
+//       session.endSession();
+//     }
+//   }
+// };
+
+// import mongoose from "mongoose";
+// import { User } from "../user/user.model.js";
+// import { Teacher } from "./Teacher.model.js";
+// import { JwtHelpers } from "../../utils/jwtHelpers.js";
+// import generateTeacherID from "../../utils/generateTeacherID.js";
+// import generateDefaultPassword from "../../utils/generateDefaultPassword.js";
+
+// export const createTeacherWithCredentials = async (
+//   payload,
+//   externalSession = null
+// ) => {
+//   let session;
+
+//   try {
+//     if (mongoose.connection.readyState !== 1) {
+//       throw new Error("MongoDB is not connected");
+//     }
+
+//     session = externalSession || (await mongoose.startSession());
+
+//     if (!externalSession) {
+//       session.startTransaction();
+//     }
+
+//     // Payload Destructuring
+//     const {
+//       thumbnail,
+//       name,
+//       email,
+//       phone,
+//       indexNumber, // Added
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary, // Object: { governmentSalary, schoolSalary }
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+//       social, // Array
+//       education, // Array
+//       bankAccounts, // Array
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+//       employmentType,
+//     } = payload;
+
+//     // Check if user exists
+//     const userExists = await User.findOne({ phone }).session(session);
+//     if (userExists) {
+//       throw new Error("Phone already exists");
+//     }
+
+//     // Generate credentials
+//     const plainPassword = generateDefaultPassword("teacher", phone);
+//     const teacherId = await generateTeacherID("TCH", session);
+
+//     const userId = new mongoose.Types.ObjectId();
+//     const teacherObjectId = new mongoose.Types.ObjectId();
+
+//     // Create User
+//     const user = new User({
+//       _id: userId,
+//       email: email || undefined,
+//       phone,
+//       password: plainPassword,
+//       role: "teacher",
+//       profileId: teacherObjectId,
+//       profileModel: "Teacher",
+//     });
+
+//     await user.save({ session });
+
+//     // Create Teacher
+//     const teacher = new Teacher({
+//       _id: teacherObjectId,
+//       userId,
+//       teacherId,
+//       indexNumber,
+//       thumbnail,
+//       name,
+//       phone,
+//       designation,
+//       department,
+//       subject,
+//       qualification,
+//       teachingExperience,
+//       salary, // Object format { governmentSalary, schoolSalary }
+//       joinDate,
+//       schoolJoinDate,
+//       bio,
+//       alternativePhone,
+//       presentAddress,
+//       permanentAddress,
+//       emergencyContact,
+//       social,
+//       education,
+//       bankAccounts,
+//       nid,
+//       birthCertificateNo,
+//       gender,
+//       dateOfBirth,
+//       bloodGroup,
+//       religion,
+//       maritalStatus,
+//       employmentType,
+//     });
+
+//     await teacher.save({ session });
+
+//     // JWT Handling
+//     const accessToken = JwtHelpers.generateAccessToken(user);
+//     const refreshToken = JwtHelpers.generateRefreshToken(user);
+
+//     user.refreshToken = refreshToken;
+//     await user.save({
+//       session,
+//       validateBeforeSave: false,
+//     });
+
+//     if (!externalSession) {
+//       await session.commitTransaction();
+//     }
+
+//     return {
+//       success: true,
+//       user,
+//       teacher,
+//       credentials: {
+//         phone,
+//         password: plainPassword,
+//       },
+//       accessToken,
+//       refreshToken,
+//     };
+//   } catch (error) {
+//     console.error("================ ERROR ================");
+//     console.error(error);
+
+//     if (session && !externalSession) {
+//       await session.abortTransaction();
+//     }
+
+//     throw error;
+//   } finally {
+//     if (session && !externalSession) {
+//       session.endSession();
+//     }
+//   }
+// };
 
 // import mongoose from "mongoose";
 // import { User } from "../modules/user/user.model.js";
