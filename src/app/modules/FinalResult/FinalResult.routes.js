@@ -6,7 +6,7 @@ import {
 } from "./FinalResult.controller.js";
 
 const router = express.Router();
-
+router.post("/generate", FinalResultControllers.generateFinalResult);
 router.post("/", 
 FinalResultControllers.createFinalResult);
 router.get("/", 

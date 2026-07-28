@@ -1,15 +1,20 @@
+import { Schema, model } from "mongoose";
 
-import {Schema, model} from "mongoose";
-
-// Declare the Schema of the Mongo model
-const ClassGroupSchema = new Schema(
-  {
-    // Define the schema fields
+const ClassGroupSchema = new Schema({
+  name: { type: String, required: true, unique: true }, // "Nursery-5", "6-8", "9", "10"
+  totalTerms: { type: Number, required: true },          // 3 for Nursery-5, 2 for 6-8/9/10
+  mergeStrategy: {
+    type: String,
+    enum: ["AVERAGE", "INDEPENDENT"],
+    default: "AVERAGE",
   },
-  {
-    timestamps: true,
-  }
-);
+  passFailPolicy: {
+    type: String,
+    enum: ["ANY_COMPULSORY_FAIL", "AVERAGE_ONLY"],
+    default: "ANY_COMPULSORY_FAIL",
+  },
+  defaultGradingScaleId: { type: Schema.Types.ObjectId, ref: "GradingScale" },
+  isActive: { type: Boolean, default: true },
+}, { timestamps: true });
 
-// Export the model
 export const ClassGroup = model("ClassGroup", ClassGroupSchema);

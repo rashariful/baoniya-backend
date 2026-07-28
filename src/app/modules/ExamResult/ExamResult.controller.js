@@ -6,10 +6,9 @@ import {
 import sendResponse from "../../utils/sendResponse.js";
 
 
-// Create ExamResult
 const createExamResult = catchAsync(async (req, res) => {
   const result = await 
-  ExamResultServices.createExamResult(req.body);
+  ExamResultServices.createExamResultWithGrading(req.body);   // ← এখানে বদল
   sendResponse(res, {
     status: 201,
     success: true,
@@ -17,6 +16,18 @@ const createExamResult = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+// Create ExamResult
+// const createExamResult = catchAsync(async (req, res) => {
+//   const result = await 
+//   ExamResultServices.createExamResult(req.body);
+//   sendResponse(res, {
+//     status: 201,
+//     success: true,
+//     message: "ExamResult created successfully",
+//     data: result,
+//   });
+// });
 
 // Get all ExamResult
 const getAllExamResult = catchAsync(async (req, res) => {
@@ -93,12 +104,25 @@ const getStudentResultByStudentId = catchAsync(
 
   }
 );
+
+const submitStudentAllSubjects = catchAsync(async (req, res) => {
+  const result = await ExamResultServices.submitStudentAllSubjects(req.body);
+  sendResponse(res, { status: 201, success: true, message: "Marks submitted", data: result });
+});
+
+const submitSubjectAllStudents = catchAsync(async (req, res) => {
+  const result = await ExamResultServices.submitSubjectAllStudents(req.body);
+  sendResponse(res, { status: 201, success: true, message: "Bulk marks submitted", data: result });
+});
+
 export const ExamResultControllers ={
   createExamResult,
   getAllExamResult,
   getSingleExamResult,
   updateExamResult,
   deleteExamResult,
-  getStudentResultByStudentId
+  getStudentResultByStudentId,
+  submitSubjectAllStudents,
+  submitStudentAllSubjects
 
 }

@@ -19,8 +19,8 @@ import { StudentRoutes } from "../modules/Student/Student.routes.js";
 import { TeacherRoutes } from "../modules/Teacher/Teacher.routes.js";
 import { ExamResultRoutes } from "../modules/ExamResult/ExamResult.routes.js";
 import { ExamRoutes } from "../modules/Exam/Exam.routes.js";
-import { ResultSettingRoutes } from "../modules/ResultSetting/ResultSetting.routes.js";
-import { GradeRuleRoutes } from "../modules/GradeRule/GradeRule.routes.js";
+// import { ResultSettingRoutes } from "../modules/ResultSetting/ResultSetting.routes.js";
+// import { GradeRuleRoutes } from "../modules/GradeRule/GradeRule.routes.js";
 import { SubjectRoutes } from "../modules/Subject/Subject.routes.js";
 import { SectionRoutes } from "../modules/Section/Section.routes.js";
 import { AcademicSessionRoutes } from "../modules/AcademicSession/AcademicSession.routes.js";
@@ -50,7 +50,7 @@ const moduleRoutes = [
     route: BannerRoutes
   },
   {
-    path: "/fnal-result",
+    path: "/final-result",
     route: FinalResultRoutes
   },
   {
@@ -94,14 +94,14 @@ const moduleRoutes = [
     path: "/exam-result",
     route: ExamResultRoutes
   },
-  {
-    path: "/result-setting",
-    route: ResultSettingRoutes
-  },
-  {
-    path: "/grade-rule",
-    route: GradeRuleRoutes
-  },
+  // {
+  //   path: "/result-setting",
+  //   route: ResultSettingRoutes
+  // },
+  // {
+  //   path: "/grade-rule",
+  //   route: GradeRuleRoutes
+  // },
   {
     path: "/subject",
     route: SubjectRoutes

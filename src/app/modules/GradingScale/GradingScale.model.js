@@ -1,15 +1,22 @@
+import { Schema, model } from "mongoose";
 
-import {Schema, model} from "mongoose";
+const SlabSchema = new Schema({
+  grade: { type: String, required: true },   // "A+", "A", "A-", "B", "C", "D", "F"
+  min: { type: Number, required: true },
+  max: { type: Number, required: true },
+  gradePoint: { type: Number, required: true },
+}, { _id: false });
 
-// Declare the Schema of the Mongo model
-const GradingScaleSchema = new Schema(
-  {
-    // Define the schema fields
+const GradingScaleSchema = new Schema({
+  name: { type: String, required: true, unique: true }, // "Standard-100", "Bangla-English-6to8"
+  scaleType: {
+    type: String,
+    enum: ["PERCENTAGE", "ABSOLUTE"],
+    required: true,
   },
-  {
-    timestamps: true,
-  }
-);
+  totalMarkForAbsolute: { type: Number }, // শুধু scaleType = ABSOLUTE হলে দরকার
+  slabs: { type: [SlabSchema], required: true },
+  isActive: { type: Boolean, default: true },
+}, { timestamps: true });
 
-// Export the model
 export const GradingScale = model("GradingScale", GradingScaleSchema);

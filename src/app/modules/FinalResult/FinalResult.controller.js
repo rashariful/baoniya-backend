@@ -70,11 +70,21 @@ const deleteFinalResult = catchAsync(async (req, res) => {
   });
 });
 
+const generateFinalResult = catchAsync(async (req, res) => {
+  const result = await FinalResultServices.generateFinalResult(req.body);
+  sendResponse(res, {
+    status: 201,
+    success: true,
+    message: "FinalResult generated successfully",
+    data: result,
+  });
+});
 export const FinalResultControllers ={
   createFinalResult,
   getAllFinalResult,
   getSingleFinalResult,
   updateFinalResult,
-  deleteFinalResult
+  deleteFinalResult,
+  generateFinalResult
 
 }
