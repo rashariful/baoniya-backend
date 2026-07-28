@@ -1,3 +1,239 @@
+import mongoose from "mongoose";
+// import { Attendance } from "./Attendance.model.js";
+// import { SyncedEvent } from "./SyncedEvent.model.js";
+// import { Teacher } from "../Teacher/Teacher.model.js";
+// import { User } from "../user/user.model.js";
+import AppError from "../../errors/AppError.js"; // Apnar project-er error path adjust kore deben
+import QueryBuilder from "../../helpers/QueryBuilder.js";
+// import { fetchAcsEvents } from "../Hikvision/hikvision.client.js";
+import { formatToBDDate, formatToBDTime } from "../../utils/timeFormatter.js";
+import { Attendance } from "./Attendance.model.js";
+import { SyncedEvent } from "../Hikvision/SyncedEvent.model.js";
+import { Teacher } from "../Teacher/Teacher.model.js";
+import { User } from "../user/user.model.js";
+import { fetchAcsEvents } from "../Hikvision/Hikvision.client.js";
+
+// ---------------------------------------------------------
+// 1. Standard CRUD & Manual Create
+// ---------------------------------------------------------
+const createAttendance = async (payload) => {
+  const result = await Attendance.create(payload);
+  return result;
+};
+
+// ---------------------------------------------------------
+// 2. Mobile / App theke "Self Check-in"
+// ---------------------------------------------------------
+const markSelfAttendance = async (userId, payload = {}) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let attendance = await Attendance.findOne({ userId, date: today });
+
+  if (attendance) {
+    attendance.checkOutTime = new Date();
+    await attendance.save();
+    return attendance;
+  }
+
+  attendance = await Attendance.create({
+    userId,
+    date: today,
+    status: payload.status || "present",
+    source: "manual",
+    checkInTime: new Date(),
+    remarks: payload.remarks,
+  });
+
+  return attendance;
+};
+
+// ---------------------------------------------------------
+// 3. Device Push / Real-time or Cron theke Shared Handler
+// ---------------------------------------------------------
+const markDeviceAttendance = async (payload) => {
+  const { deviceUserId, deviceId, source, timestamp } = payload;
+
+  if (!deviceUserId) {
+    throw new AppError(400, "deviceUserId is required");
+  }
+
+  const teacher = await Teacher.findOne({ deviceUserId });
+  if (!teacher) {
+    throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`);
+  }
+
+  const scanTime = timestamp ? new Date(timestamp) : new Date();
+  const date = new Date(scanTime);
+  date.setHours(0, 0, 0, 0);
+
+  let attendance = await Attendance.findOne({ userId: teacher.userId, date });
+
+  if (!attendance) {
+    // Prothom scan = Check-in
+    attendance = await Attendance.create({
+      userId: teacher.userId,
+      date,
+      status: "present",
+      source: source || "face",
+      checkInTime: scanTime,
+      deviceId,
+      sessions: [{ checkInTime: scanTime }],
+    });
+  } else {
+    const lastSession = attendance.sessions[attendance.sessions.length - 1];
+
+    if (lastSession && !lastSession.checkOutTime) {
+      // Last session open ache -> Check-out update hobe
+      lastSession.checkOutTime = scanTime;
+      attendance.checkOutTime = scanTime;
+    } else {
+      // Notun session shuru
+      attendance.sessions.push({ checkInTime: scanTime });
+    }
+
+    await attendance.save();
+  }
+
+  return attendance;
+};
+
+// ---------------------------------------------------------
+// 4. Background Cron / Manual Pull Sync from Hikvision Device
+// ---------------------------------------------------------
+const syncDeviceAttendance = async () => {
+  const now = new Date();
+  const startTime = new Date(now);
+  startTime.setHours(0, 0, 0, 0);
+
+  const latestByUserDate = new Map();
+  let position = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const result = await fetchAcsEvents({
+      startTime,
+      endTime: now,
+      searchPosition: position,
+      maxResults: 100,
+    });
+
+    const events = result?.events || [];
+
+    for (const event of events) {
+      // Major 5 & Minor 75 mane Access Controller event / Successful verification
+      if (event.major !== 5 || event.minor !== 75 || !event.employeeNoString) continue;
+
+      const serialNoStr = String(event.serialNo);
+      const alreadyProcessed = await SyncedEvent.findOne({ serialNo: serialNoStr });
+      if (alreadyProcessed) continue;
+
+      try {
+        const attendance = await markDeviceAttendance({
+          deviceUserId: event.employeeNoString,
+          deviceId: "hik-device-1",
+          source: event.currentVerifyMode?.includes("fp") ? "fingerprint" : "face",
+          timestamp: event.time,
+        });
+
+        await SyncedEvent.create({ serialNo: serialNoStr });
+
+        const key = `${attendance.userId}-${attendance.date}`;
+        latestByUserDate.set(key, attendance);
+      } catch (err) {
+        console.warn(`Skipped event for deviceUserId ${event.employeeNoString}: ${err.message}`);
+        continue;
+      }
+    }
+
+    hasMore = result.hasMore;
+    position += 30;
+  }
+
+  return Array.from(latestByUserDate.values());
+};
+
+// ---------------------------------------------------------
+// 5. Advanced Get All with QueryBuilder & BD Time Formatting
+// ---------------------------------------------------------
+const getAllAttendance = async (query) => {
+  const AttendanceSearchableFields = [];
+  const resultQuery = new QueryBuilder(
+     Attendance.find().populate("userId", "name email role thumbnail phone"), // Ekhane field gulo add kore dilam
+    query
+  )
+    .search(AttendanceSearchableFields)
+    .filter()
+    .sort()
+    .fields()
+    .paginate()
+    .limit();
+
+  const result = await resultQuery.modelQuery;
+  const meta = await resultQuery.countTotal();
+
+  // BD Time format conversion
+  const formattedData = result.map((att) => {
+    const obj = att.toObject();
+    return {
+      ...obj,
+      checkInTime: obj.checkInTime ? formatToBDTime(obj.checkInTime) : null,
+      checkOutTime: obj.checkOutTime ? formatToBDTime(obj.checkOutTime) : null,
+      date: formatToBDDate(obj.date),
+    };
+  });
+
+  return {
+    data: formattedData,
+    meta,
+  };
+};
+
+const getSingleAttendance = async (id) => {
+  const result = await Attendance.findById(id).populate("userId", "name email role");
+  if (!result) {
+    throw new AppError(404, "Attendance not found");
+  }
+  return result;
+};
+
+const updateAttendance = async (id, payload) => {
+  const result = await Attendance.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  });
+  if (!result) {
+    throw new AppError(404, "Attendance not found");
+  }
+  return result;
+};
+
+const deleteAttendance = async (id) => {
+  const result = await Attendance.findByIdAndDelete(id);
+  if (!result) {
+    throw new AppError(404, "Attendance not found");
+  }
+  return result;
+};
+
+export const AttendanceServices = {
+  createAttendance,
+  markSelfAttendance,
+  markDeviceAttendance,
+  syncDeviceAttendance,
+  getAllAttendance,
+  getSingleAttendance,
+  updateAttendance,
+  deleteAttendance,
+};
+
+
+
 // // import { Attendance } from "./attendance.model.js";
 // // import { User } from "../user/user.model.js"; // apnar actual path diye adjust korben
 // // import AppError from "../../errors/AppError.js"; // apnar existing error handler path diye adjust korben
@@ -514,44 +750,44 @@
 // };
 
 
-import { Attendance } from "./Attendance.model.js";
-import QueryBuilder from "../../helpers/QueryBuilder.js";
+// import { Attendance } from "./Attendance.model.js";
+// import QueryBuilder from "../../helpers/QueryBuilder.js";
 
-// Declare the Services 
+// // Declare the Services 
 
-const createAttendance = async (payload) => {
-    const result = await Attendance.create(payload);
-    return result;
-}
+// const createAttendance = async (payload) => {
+//     const result = await Attendance.create(payload);
+//     return result;
+// }
 
-const getAllAttendance = async (query) => {
-    const AttendanceSearchableFields = [];
-    const resultQuery = new QueryBuilder(Attendance.find(), query).search(AttendanceSearchableFields).filter().sort().fields().paginate().limit();
-    const result = await resultQuery.modelQuery;
-    const meta = await resultQuery.countTotal();
+// const getAllAttendance = async (query) => {
+//     const AttendanceSearchableFields = [];
+//     const resultQuery = new QueryBuilder(Attendance.find(), query).search(AttendanceSearchableFields).filter().sort().fields().paginate().limit();
+//     const result = await resultQuery.modelQuery;
+//     const meta = await resultQuery.countTotal();
 
-    return {
-        data: result,
-        meta
-    }
-}
-const getSingleAttendance = async (id) => {
-    const result = await Attendance.findById(id);
-    return result;
-}
-const updateAttendance = async (id, payload) => {
-    const result = await Attendance.findByIdAndUpdate(id, payload, { new: true, runValidators: true});
-    return result;
-}
-const deleteAttendance = async (id) => {
-    const result = await Attendance.findByIdAndDelete(id);
-    return result;
-}
+//     return {
+//         data: result,
+//         meta
+//     }
+// }
+// const getSingleAttendance = async (id) => {
+//     const result = await Attendance.findById(id);
+//     return result;
+// }
+// const updateAttendance = async (id, payload) => {
+//     const result = await Attendance.findByIdAndUpdate(id, payload, { new: true, runValidators: true});
+//     return result;
+// }
+// const deleteAttendance = async (id) => {
+//     const result = await Attendance.findByIdAndDelete(id);
+//     return result;
+// }
 
-export const AttendanceServices = {
-    createAttendance,
-    getAllAttendance,
-    getSingleAttendance,
-    updateAttendance,
-    deleteAttendance
-}
+// export const AttendanceServices = {
+//     createAttendance,
+//     getAllAttendance,
+//     getSingleAttendance,
+//     updateAttendance,
+//     deleteAttendance
+// }
