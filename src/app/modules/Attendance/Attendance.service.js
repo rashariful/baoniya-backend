@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 // import { SyncedEvent } from "./SyncedEvent.model.js";
 // import { Teacher } from "../Teacher/Teacher.model.js";
 // import { User } from "../user/user.model.js";
-import AppError from "../../errors/AppError.js"; // Apnar project-er error path adjust kore deben
+// import  from "../../errors/.js"; // Apnar project-er error path adjust kore deben
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 // import { fetchAcsEvents } from "../Hikvision/hikvision.client.js";
 import { formatToBDDate, formatToBDTime } from "../../utils/timeFormatter.js";
@@ -27,7 +27,7 @@ const createAttendance = async (payload) => {
 const markSelfAttendance = async (userId, payload = {}) => {
   const user = await User.findById(userId);
   if (!user) {
-    throw new AppError(404, "User not found");
+    throw new (404, "User not found");
   }
 
   const today = new Date();
@@ -60,12 +60,12 @@ const markDeviceAttendance = async (payload) => {
   const { deviceUserId, deviceId, source, timestamp } = payload;
 
   if (!deviceUserId) {
-    throw new AppError(400, "deviceUserId is required");
+    throw new (400, "deviceUserId is required");
   }
 
   const teacher = await Teacher.findOne({ deviceUserId });
   if (!teacher) {
-    throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`);
+    throw new (404, `No teacher found for deviceUserId: ${deviceUserId}`);
   }
 
   const scanTime = timestamp ? new Date(timestamp) : new Date();
@@ -197,7 +197,7 @@ const getAllAttendance = async (query) => {
 const getSingleAttendance = async (id) => {
   const result = await Attendance.findById(id).populate("userId", "name email role");
   if (!result) {
-    throw new AppError(404, "Attendance not found");
+    throw new (404, "Attendance not found");
   }
   return result;
 };
@@ -208,7 +208,7 @@ const updateAttendance = async (id, payload) => {
     runValidators: true,
   });
   if (!result) {
-    throw new AppError(404, "Attendance not found");
+    throw new (404, "Attendance not found");
   }
   return result;
 };
@@ -216,7 +216,7 @@ const updateAttendance = async (id, payload) => {
 const deleteAttendance = async (id) => {
   const result = await Attendance.findByIdAndDelete(id);
   if (!result) {
-    throw new AppError(404, "Attendance not found");
+    throw new (404, "Attendance not found");
   }
   return result;
 };
@@ -236,9 +236,9 @@ export const AttendanceServices = {
 
 // // import { Attendance } from "./attendance.model.js";
 // // import { User } from "../user/user.model.js"; // apnar actual path diye adjust korben
-// // import AppError from "../../errors/AppError.js"; // apnar existing error handler path diye adjust korben
+// // import  from "../../errors/.js"; // apnar existing error handler path diye adjust korben
 
-// import AppError from "../../errors/appError.js";
+// import  from "../../errors/.js";
 // import { formatToBDDate, formatToBDTime } from "../../utils/timeFormatter.js";
 // import { fetchAcsEvents } from "../Hikvision/Hikvision.client.js";
 // import { SyncedEvent } from "../Hikvision/SyncedEvent.model.js";
@@ -262,7 +262,7 @@ export const AttendanceServices = {
 // const markSelfAttendance = async (userId, payload = {}) => {
 //   const user = await User.findById(userId);
 //   if (!user) {
-//     throw new AppError(404, "User not found");
+//     throw new (404, "User not found");
 //   }
 
 //   const today = new Date();
@@ -299,12 +299,12 @@ export const AttendanceServices = {
 //   const { deviceUserId, deviceId, source, timestamp } = payload;
 
 //   if (!deviceUserId) {
-//     throw new AppError(400, "deviceUserId is required");
+//     throw new (400, "deviceUserId is required");
 //   }
 
 //   const teacher = await Teacher.findOne({ deviceUserId });
 //   if (!teacher) {
-//     throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`);
+//     throw new (404, `No teacher found for deviceUserId: ${deviceUserId}`);
 //   }
 
 //   const scanTime = timestamp ? new Date(timestamp) : new Date();
@@ -347,14 +347,14 @@ export const AttendanceServices = {
 // //   const { deviceUserId, deviceId, source, timestamp } = payload;
 
 // //   if (!deviceUserId) {
-// //     throw new AppError(400, "deviceUserId is required");
+// //     throw new (400, "deviceUserId is required");
 // //   }
 
 // //   // ✅ Teacher model e deviceUserId diye khoja hocche
 // //   const teacher = await Teacher.findOne({ deviceUserId });
 
 // //   if (!teacher) {
-// //     throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`);
+// //     throw new (404, `No teacher found for deviceUserId: ${deviceUserId}`);
 // //   }
 
 // //   const scanTime = timestamp ? new Date(timestamp) : new Date();
@@ -386,7 +386,7 @@ export const AttendanceServices = {
 // //   const { deviceUserId, deviceId, source, timestamp } = payload;
 
 // //   if (!deviceUserId) {
-// //     throw new AppError(400, "deviceUserId is required");
+// //     throw new (400, "deviceUserId is required");
 // //   }
 
 // //   // ✅ biometricDevices array er bhitore deviceUserId khujbe, শুধু teacher role
@@ -396,7 +396,7 @@ export const AttendanceServices = {
 // //   });
 
 // //   if (!user) {
-// //     throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`);
+// //     throw new (404, `No teacher found for deviceUserId: ${deviceUserId}`);
 // //   }
 
 // //   const scanTime = timestamp ? new Date(timestamp) : new Date();
@@ -430,7 +430,7 @@ export const AttendanceServices = {
 // //   const { deviceUserId, deviceId, source, timestamp } = payload;
 
 // //   if (!deviceUserId) {
-// //     throw new AppError(400, "deviceUserId is required");
+// //     throw new (400, "deviceUserId is required");
 // //   }
 
 // //   // User ke khuje pawa hocche deviceUserId diye
@@ -441,7 +441,7 @@ export const AttendanceServices = {
 // // });
 
 // // if (!user) {
-// //   throw new AppError(
+// //   throw new (
 // //     404,
 // //     `No teacher found for deviceUserId: ${deviceUserId}`
 // //   );
@@ -505,7 +505,7 @@ export const AttendanceServices = {
 //     "name email role"
 //   );
 //   if (!result) {
-//     throw new AppError(404, "Attendance not found");
+//     throw new (404, "Attendance not found");
 //   }
 //   return result;
 // };
@@ -519,7 +519,7 @@ export const AttendanceServices = {
 //     runValidators: true,
 //   });
 //   if (!result) {
-//     throw new AppError(404, "Attendance not found");
+//     throw new (404, "Attendance not found");
 //   }
 //   return result;
 // };
@@ -530,7 +530,7 @@ export const AttendanceServices = {
 // const deleteAttendance = async (id) => {
 //   const result = await Attendance.findByIdAndDelete(id);
 //   if (!result) {
-//     throw new AppError(404, "Attendance not found");
+//     throw new (404, "Attendance not found");
 //   }
 //   return result;
 // };
