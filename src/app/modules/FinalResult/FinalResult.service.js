@@ -53,21 +53,90 @@ const createFinalResult = async (payload) => {
     const result = await FinalResult.create(payload);
     return result;
 }
+// const getAllFinalResult = async (query) => {
+//     const FinalResultSearchableFields = [];
+//     const resultQuery = new QueryBuilder(
+//         FinalResult.find()
+//             .populate("studentId", "name studentId rollNumber")
+//             .populate("classGroupId", "name")
+//             .populate("sessionId", "name"),
+//         query
+//     )
+//         .search(FinalResultSearchableFields)
+//         .filter()
+//         .sort()
+//         .fields()
+//         .paginate()
+//         .limit();
+
+//     const result = await resultQuery.modelQuery;
+//     const meta = await resultQuery.countTotal();
+
+//     return {
+//         data: result,
+//         meta
+//     }
+// }
 const getAllFinalResult = async (query) => {
     const FinalResultSearchableFields = [];
-    const resultQuery = new QueryBuilder(FinalResult.find(), query).search(FinalResultSearchableFields).filter().sort().fields().paginate().limit();
+    const resultQuery = new QueryBuilder(
+        FinalResult.find()
+            .populate("studentId", "name studentId")
+            .populate("classGroupId", "name")
+            .populate("sessionId", "name")
+            .populate("termResults.examId", "name term")
+            .populate({
+                path: "termResults.examResultId",
+                select: "subjects overallStatus gpa",
+                populate: { path: "subjects.subjectId", select: "name code fullMarks passMarks" }
+            }),
+        query
+    )
+        .search(FinalResultSearchableFields)
+        .filter()
+        .sort()
+        .fields()
+        .paginate()
+        .limit();
+
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
 
-    return {
-        data: result,
-        meta
-    }
-}
+    return { data: result, meta };
+};
+
 const getSingleFinalResult = async (id) => {
-    const result = await FinalResult.findById(id);
+    const result = await FinalResult.findById(id)
+        .populate("studentId", "name studentId")
+        .populate("classGroupId", "name")
+        .populate("sessionId", "name")
+        .populate("termResults.examId", "name term")
+   .populate({
+  path: "termResults.examResultId",
+  select: "subjects overallStatus gpa",
+  populate: { path: "subjects.subjectId", select: "name code fullMarks passMarks" }
+})
     return result;
-}
+};
+
+
+
+
+// const getAllFinalResult = async (query) => {
+//     const FinalResultSearchableFields = [];
+//     const resultQuery = new QueryBuilder(FinalResult.find(), query).search(FinalResultSearchableFields).filter().sort().fields().paginate().limit();
+//     const result = await resultQuery.modelQuery;
+//     const meta = await resultQuery.countTotal();
+
+//     return {
+//         data: result,
+//         meta
+//     }
+// }
+// const getSingleFinalResult = async (id) => {
+//     const result = await FinalResult.findById(id);
+//     return result;
+// }
 const updateFinalResult = async (id, payload) => {
     const result = await FinalResult.findByIdAndUpdate(id, payload, { new: true, runValidators: true});
     return result;
