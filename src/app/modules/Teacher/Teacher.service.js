@@ -2,10 +2,11 @@ import { Teacher } from "./Teacher.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary.js";
 import { createTeacherWithCredentials } from "./teacher.utils.js";
-import {
-  updateHikvisionUser,
-  deleteHikvisionUser,
-} from "../Hikvision/hikvision.client.js";
+import { updateHikvisionUser,deleteHikvisionUser } from "../Hikvision/Hikvision.client.js";
+// import {
+//   updateHikvisionUser,
+//   deleteHikvisionUser,
+// } from "../Hikvision/hikvision.client.js";
 
 const DEFAULT_DEVICE_ID = process.env.DEFAULT_HIKVISION_DEVICE_ID || "hik-device-1";
 
