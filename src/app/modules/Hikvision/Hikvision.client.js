@@ -1,7 +1,6 @@
 import DigestFetch from "digest-fetch";
 import { Device } from "../Device/Device.model.js";
 
-// Ekta device-er info diye client banano (multi-device support)
 const getClient = async (deviceId) => {
   const device = await Device.findOne({ deviceId });
   if (!device) throw new Error(`Device not found: ${deviceId}`);
@@ -12,7 +11,7 @@ const getClient = async (deviceId) => {
   return { client, baseUrl, device };
 };
 
-// Helper: Teacher ID (e.g. "TCH-26-0023-7") theke shudhu numbers ber kora
+// Teacher ID (e.g. "TCH-26-0023-7") theke shudhu numbers ber kora
 const toNumericEmployeeNo = (teacherId) => {
   const numericOnly = teacherId.replace(/\D/g, "");
   if (!numericOnly) {
@@ -24,11 +23,19 @@ const toNumericEmployeeNo = (teacherId) => {
 // ---------------------------------------------------------
 // 1. Fetch ACS Events (Attendance Logs Pull from Device)
 // ---------------------------------------------------------
-export const fetchAcsEvents = async ({ startTime, endTime, searchPosition = 0, maxResults = 30 }) => {
-  // Amra default device ba prothom active device use korte pari, ba deviceId pass korte pari. 
-  // Ekhane prothom device-er IP/Auth niye pull korchi (Multi-device hole deviceId parameter hisebe pathate paren)
-  const device = await Device.findOne(); 
-  if (!device) throw new Error("No default Hikvision device found for sync");
+export const fetchAcsEvents = async ({
+  deviceId,
+  startTime,
+  endTime,
+  searchPosition = 0,
+  maxResults = 30,
+}) => {
+  // Problem 2 fix: deviceId parameter-e ashe, na dile fallback e prothom device
+  const device = deviceId
+    ? await Device.findOne({ deviceId })
+    : await Device.findOne();
+
+  if (!device) throw new Error("No Hikvision device found for sync");
 
   const { client, baseUrl } = await getClient(device.deviceId);
 
@@ -37,19 +44,16 @@ export const fetchAcsEvents = async ({ startTime, endTime, searchPosition = 0, m
       searchID: "1",
       searchPosition,
       maxResults,
-      major: 5, // Access Control Event
-      minor: 75, // Successful Verification / Normal Access
-      startTime: startTime.toISOString().split(".")[0], // Format: YYYY-MM-DDTHH:mm:ss
+      major: 5,
+      minor: 75,
+      startTime: startTime.toISOString().split(".")[0],
       endTime: endTime.toISOString().split(".")[0],
     },
   };
 
   const res = await client.fetch(
     `${baseUrl}/ISAPI/AccessControl/AcsEvent?format=json`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }
+    { method: "POST", body: JSON.stringify(payload) }
   );
 
   const rawText = await res.text();
@@ -57,15 +61,18 @@ export const fetchAcsEvents = async ({ startTime, endTime, searchPosition = 0, m
   try {
     data = JSON.parse(rawText);
   } catch (e) {
-    throw new Error(`Non-JSON response from device during event fetch (status ${res.status}): ${rawText}`);
+    throw new Error(
+      `Non-JSON response from device during event fetch (status ${res.status}): ${rawText}`
+    );
   }
 
-  // Hikvision Event search result structure: data.AcsEvent.InfoList
   const events = data?.AcsEvent?.InfoList || [];
   const totalMatches = data?.AcsEvent?.totalMatches || 0;
+  // Problem 3 fix: events.length diye position barano, fixed 30 na
   const hasMore = searchPosition + events.length < totalMatches;
 
   return {
+    deviceId: device.deviceId, // Problem 2 fix: caller-ke device identity return kora
     events,
     hasMore,
     totalMatches,
@@ -99,11 +106,6 @@ export const createHikvisionUser = async (deviceId, { employeeNo, name }) => {
   );
 
   const rawText = await res.text();
-  console.log("=== HIKVISION CREATE RAW RESPONSE ===");
-  console.log("HTTP Status:", res.status);
-  console.log("Body:", rawText);
-  console.log("======================================");
-
   let data;
   try {
     data = JSON.parse(rawText);
@@ -114,6 +116,8 @@ export const createHikvisionUser = async (deviceId, { employeeNo, name }) => {
   if (data.statusCode !== 1) {
     throw new Error(`Hikvision create failed: ${JSON.stringify(data)}`);
   }
+
+  // Problem 1 fix: numeric employeeNo-i return kora hocche, jate caller eta deviceUserId hishebe save kore
   return { ...data, employeeNo: numericEmployeeNo };
 };
 
@@ -133,11 +137,6 @@ export const updateHikvisionUser = async (deviceId, { employeeNo, name }) => {
   );
 
   const rawText = await res.text();
-  console.log("=== HIKVISION UPDATE RAW RESPONSE ===");
-  console.log("HTTP Status:", res.status);
-  console.log("Body:", rawText);
-  console.log("======================================");
-
   let data;
   try {
     data = JSON.parse(rawText);
@@ -170,11 +169,6 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
   );
 
   const rawText = await res.text();
-  console.log("=== HIKVISION DELETE RAW RESPONSE ===");
-  console.log("HTTP Status:", res.status);
-  console.log("Body:", rawText);
-  console.log("======================================");
-
   let data;
   try {
     data = JSON.parse(rawText);
@@ -187,6 +181,8 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
   }
   return data;
 };
+
+
 
 // import DigestFetch from "digest-fetch";
 // import { Device } from "../Device/Device.model.js";
@@ -201,9 +197,9 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 
 //   return { client, baseUrl, device };
 // };
-// // hikvision.client.js e ekta helper add korun
+
+// // Helper: Teacher ID (e.g. "TCH-26-0023-7") theke shudhu numbers ber kora
 // const toNumericEmployeeNo = (teacherId) => {
-//   // "TCH-26-0023-7" theke shudhu digits ber kore anbe: "26002307"
 //   const numericOnly = teacherId.replace(/\D/g, "");
 //   if (!numericOnly) {
 //     throw new Error(`Cannot derive numeric employeeNo from teacherId: ${teacherId}`);
@@ -211,6 +207,60 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 //   return numericOnly;
 // };
 
+// // ---------------------------------------------------------
+// // 1. Fetch ACS Events (Attendance Logs Pull from Device)
+// // ---------------------------------------------------------
+// export const fetchAcsEvents = async ({ startTime, endTime, searchPosition = 0, maxResults = 30 }) => {
+//   // Amra default device ba prothom active device use korte pari, ba deviceId pass korte pari. 
+//   // Ekhane prothom device-er IP/Auth niye pull korchi (Multi-device hole deviceId parameter hisebe pathate paren)
+//   const device = await Device.findOne(); 
+//   if (!device) throw new Error("No default Hikvision device found for sync");
+
+//   const { client, baseUrl } = await getClient(device.deviceId);
+
+//   const payload = {
+//     AcsEventCond: {
+//       searchID: "1",
+//       searchPosition,
+//       maxResults,
+//       major: 5, // Access Control Event
+//       minor: 75, // Successful Verification / Normal Access
+//       startTime: startTime.toISOString().split(".")[0], // Format: YYYY-MM-DDTHH:mm:ss
+//       endTime: endTime.toISOString().split(".")[0],
+//     },
+//   };
+
+//   const res = await client.fetch(
+//     `${baseUrl}/ISAPI/AccessControl/AcsEvent?format=json`,
+//     {
+//       method: "POST",
+//       body: JSON.stringify(payload),
+//     }
+//   );
+
+//   const rawText = await res.text();
+//   let data;
+//   try {
+//     data = JSON.parse(rawText);
+//   } catch (e) {
+//     throw new Error(`Non-JSON response from device during event fetch (status ${res.status}): ${rawText}`);
+//   }
+
+//   // Hikvision Event search result structure: data.AcsEvent.InfoList
+//   const events = data?.AcsEvent?.InfoList || [];
+//   const totalMatches = data?.AcsEvent?.totalMatches || 0;
+//   const hasMore = searchPosition + events.length < totalMatches;
+
+//   return {
+//     events,
+//     hasMore,
+//     totalMatches,
+//   };
+// };
+
+// // ---------------------------------------------------------
+// // 2. User Create
+// // ---------------------------------------------------------
 // export const createHikvisionUser = async (deviceId, { employeeNo, name }) => {
 //   const { client, baseUrl } = await getClient(deviceId);
 
@@ -250,56 +300,12 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 //   if (data.statusCode !== 1) {
 //     throw new Error(`Hikvision create failed: ${JSON.stringify(data)}`);
 //   }
-//   // numericEmployeeNo return korবো, jate calling code eta deviceUserId হিসেবে save korte pare
 //   return { ...data, employeeNo: numericEmployeeNo };
 // };
 
-
-// // // User create
-// // export const createHikvisionUser = async (deviceId, { employeeNo, name }) => {
-// //   const { client, baseUrl } = await getClient(deviceId);
-
-// //   const body = {
-// //     UserInfo: {
-// //       employeeNo,
-// //       name,
-// //       userType: "normal",
-// //       Valid: {
-// //         enable: true,
-// //         beginTime: "2024-01-01T00:00:00",
-// //         endTime: "2034-12-31T23:59:59",
-// //       },
-// //     },
-// //   };
-
-// //   const res = await client.fetch(
-// //     `${baseUrl}/ISAPI/AccessControl/UserInfo/Record?format=json`,
-// //     {
-// //       method: "POST",
-// //       body: JSON.stringify(body),
-// //     }
-// //   );
-
-// //   const rawText = await res.text();
-// //   console.log("=== HIKVISION CREATE RAW RESPONSE ===");
-// //   console.log("HTTP Status:", res.status);
-// //   console.log("Body:", rawText);
-// //   console.log("======================================");
-
-// //   let data;
-// //   try {
-// //     data = JSON.parse(rawText);
-// //   } catch (e) {
-// //     throw new Error(`Non-JSON response from device (status ${res.status}): ${rawText}`);
-// //   }
-
-// //   if (data.statusCode !== 1) {
-// //     throw new Error(`Hikvision create failed: ${JSON.stringify(data)}`);
-// //   }
-// //   return data;
-// // };
-
-// // User update
+// // ---------------------------------------------------------
+// // 3. User Update
+// // ---------------------------------------------------------
 // export const updateHikvisionUser = async (deviceId, { employeeNo, name }) => {
 //   const { client, baseUrl } = await getClient(deviceId);
 
@@ -331,7 +337,9 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 //   return data;
 // };
 
-// // User delete
+// // ---------------------------------------------------------
+// // 4. User Delete
+// // ---------------------------------------------------------
 // export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 //   const { client, baseUrl } = await getClient(deviceId);
 
@@ -364,82 +372,4 @@ export const deleteHikvisionUser = async (deviceId, { employeeNo }) => {
 //     throw new Error(`Hikvision delete failed: ${JSON.stringify(data)}`);
 //   }
 //   return data;
-// };
-
-
-// import DigestFetch from "digest-fetch";
-
-// const DEVICE_IP = process.env.HIK_DEVICE_IP;
-// const DEVICE_USER = process.env.HIK_DEVICE_USER;
-// const DEVICE_PASS = process.env.HIK_DEVICE_PASS;
-
-// const client = new DigestFetch(DEVICE_USER, DEVICE_PASS);
-
-// // Hikvision date format: YYYY-MM-DDTHH:mm:ss+06:00
-// const formatHikTime = (date) => {
-//   const pad = (n) => String(n).padStart(2, "0");
-//   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-//     date.getDate()
-//   )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-//     date.getSeconds()
-//   )}+06:00`;
-// };
-
-// export const fetchAcsEvents = async ({
-//   startTime,
-//   endTime,
-//   searchPosition = 0,
-//   maxResults = 30,
-// }) => {
-//   const url = `http://${DEVICE_IP}/ISAPI/AccessControl/AcsEvent?format=json`;
-
-//   if (startTime instanceof Date) startTime = formatHikTime(startTime);
-//   if (endTime instanceof Date) endTime = formatHikTime(endTime);
-
-//   const body = {
-//     AcsEventCond: {
-//       searchID: "1",
-//       searchResultPosition: searchPosition,
-//       maxResults,
-//       major: 5, // ✅ shudhu access-control related event
-//       minor: 0,
-//       startTime,
-//       endTime,
-//     },
-//   };
-
-//   console.log("========== REQUEST ==========");
-//   console.log(JSON.stringify(body, null, 2));
-
-//   const res = await client.fetch(url, {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Accept: "application/json",
-//     },
-//     body: JSON.stringify(body),
-//   });
-
-//   console.log("========== RESPONSE STATUS ==========", res.status);
-
-//   const text = await res.text();
-//   console.log(text);
-
-//   if (!res.ok) {
-//     throw new Error(`Hikvision Error (${res.status}): ${text}`);
-//   }
-
-//   let data;
-//   try {
-//     data = JSON.parse(text);
-//   } catch (err) {
-//     throw new Error(`Invalid JSON Response: ${text}`);
-//   }
-
-//   // ✅ Consistent object return - সবসময় events, totalMatches, hasMore থাকবে
-//   return {
-//     events: data?.AcsEvent?.InfoList || [],
-//     totalMatches: data?.AcsEvent?.totalMatches || 0,
-//     hasMore: data?.AcsEvent?.responseStatusStrg === "MORE",
-//   };
 // };

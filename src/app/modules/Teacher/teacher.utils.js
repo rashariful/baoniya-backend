@@ -4,7 +4,8 @@ import { Teacher } from "./Teacher.model.js";
 import { JwtHelpers } from "../../utils/jwtHelpers.js";
 import generateTeacherID from "../../utils/generateTeacherID.js";
 import generateDefaultPassword from "../../utils/generateDefaultPassword.js";
-import { createHikvisionUser } from "../Hikvision/hikvision.client.js";
+import { createHikvisionUser } from "../Hikvision/Hikvision.client.js";
+// import { createHikvisionUser } from "../Hikvision/hikvision.client.js";
 
 const DEFAULT_DEVICE_ID = process.env.DEFAULT_HIKVISION_DEVICE_ID || "hik-device-1";
 

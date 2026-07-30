@@ -10,7 +10,7 @@ const createClassGroup = async (payload) => {
 }
 const getAllClassGroup = async (query) => {
     const ClassGroupSearchableFields = [];
-    const resultQuery = new QueryBuilder(ClassGroup.find(), query).search(ClassGroupSearchableFields).filter().sort().fields().paginate().limit();
+    const resultQuery = new QueryBuilder(ClassGroup.find().populate("defaultGradingScaleId"), query).search(ClassGroupSearchableFields).filter().sort().fields().paginate().limit();
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
 
@@ -20,7 +20,7 @@ const getAllClassGroup = async (query) => {
     }
 }
 const getSingleClassGroup = async (id) => {
-    const result = await ClassGroup.findById(id);
+    const result = await ClassGroup.findById(id).populate("defaultGradingScaleId");
     return result;
 }
 const updateClassGroup = async (id, payload) => {

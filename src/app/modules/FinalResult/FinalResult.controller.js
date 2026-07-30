@@ -69,7 +69,7 @@ const deleteFinalResult = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
+// Single Generate Controller
 const generateFinalResult = catchAsync(async (req, res) => {
   const result = await FinalResultServices.generateFinalResult(req.body);
   sendResponse(res, {
@@ -79,12 +79,34 @@ const generateFinalResult = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+// Bulk Generate Controller
+const generateBulkFinalResult = catchAsync(async (req, res) => {
+  const result = await FinalResultServices.generateBulkFinalResult(req.body);
+  sendResponse(res, {
+    status: 201,
+    success: true,
+    message: `Successfully generated final results for ${result.count} students.`,
+    data: result.results,
+  });
+});
+
+// const generateFinalResult = catchAsync(async (req, res) => {
+//   const result = await FinalResultServices.generateFinalResult(req.body);
+//   sendResponse(res, {
+//     status: 201,
+//     success: true,
+//     message: "FinalResult generated successfully",
+//     data: result,
+//   });
+// });
 export const FinalResultControllers ={
   createFinalResult,
   getAllFinalResult,
   getSingleFinalResult,
   updateFinalResult,
   deleteFinalResult,
-  generateFinalResult
+    generateFinalResult,
+  generateBulkFinalResult,
 
 }

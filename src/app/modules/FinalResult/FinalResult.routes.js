@@ -7,6 +7,7 @@ import {
 
 const router = express.Router();
 router.post("/generate", FinalResultControllers.generateFinalResult);
+router.post("/generate-bulk", FinalResultControllers.generateBulkFinalResult);
 router.post("/", 
 FinalResultControllers.createFinalResult);
 router.get("/", 
