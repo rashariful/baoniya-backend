@@ -58,6 +58,7 @@ const TeacherSchema = new Schema(
 
     thumbnail: { type: String, default: "" },
     name: { type: String, required: true, trim: true },
+    // hikEmployeeNo: { type: String, required: true, trim: true },
     
     teacherId: { type: String, unique: true, required: true },
     indexNumber: { type: String }, 
