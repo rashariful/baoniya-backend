@@ -115,6 +115,28 @@ const submitSubjectAllStudents = catchAsync(async (req, res) => {
   sendResponse(res, { status: 201, success: true, message: "Bulk marks submitted", data: result });
 });
 
+
+const getHighestMarksPerSubject = catchAsync(async (req, res) => {
+  const { examId } = req.query;
+  const result = await ExamResultServices.getHighestMarksPerSubject({ examId });
+  sendResponse(res, {
+    status: 200,
+    success: true,
+    message: "Highest marks per subject fetched successfully",
+    data: result,
+  });
+});
+
+const calculatePositions = catchAsync(async (req, res) => {
+  const { examId } = req.body;
+  const result = await ExamResultServices.calculatePositions({ examId });
+  sendResponse(res, {
+    status: 200,
+    success: true,
+    message: "Position calculated successfully",
+    data: result,
+  });
+});
 export const ExamResultControllers ={
   createExamResult,
   getAllExamResult,
@@ -123,6 +145,9 @@ export const ExamResultControllers ={
   deleteExamResult,
   getStudentResultByStudentId,
   submitSubjectAllStudents,
-  submitStudentAllSubjects
+  submitStudentAllSubjects,
+  getHighestMarksPerSubject,
+  calculatePositions
+  
 
 }

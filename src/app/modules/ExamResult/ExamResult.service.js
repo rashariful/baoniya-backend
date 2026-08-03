@@ -3,7 +3,7 @@ import { ExamResult } from "./ExamResult.model.js";
 import QueryBuilder from "../../helpers/QueryBuilder.js";
 import { Student } from "../Student/Student.model.js";
 import { GradingEngine } from "../GradingScale/GradingEngine.service.js";
-
+import mongoose from "mongoose";
 // Declare the Services 
 const createExamResultWithGrading = async (payload) => {
   const { studentId, examId, sessionId, classGroupId, marksInput } = payload;
@@ -194,6 +194,129 @@ const submitSubjectAllStudents = async ({ examId, sessionId, classGroupId, subje
   return results;
 };
 
+// ক্লাসের মধ্যে প্রতিটা সাবজেক্টে সর্বোচ্চ নম্বর (একটা exam-ভিত্তিক)
+const getHighestMarksPerSubject = async ({ examId }) => {
+  const results = await ExamResult.aggregate([
+    { $match: { examId: new mongoose.Types.ObjectId(examId) } },
+    { $unwind: "$subjects" },
+    {
+      $group: {
+        _id: "$subjects.subjectId",
+        highestMark: { $max: "$subjects.total" },
+      },
+    },
+    {
+      $lookup: {
+        from: "subjects", // ⚠️ MongoDB collection নাম lowercase+plural হয় সাধারণত, চেক করে নাও
+        localField: "_id",
+        foreignField: "_id",
+        as: "subjectInfo",
+      },
+    },
+    { $unwind: "$subjectInfo" },
+    {
+      $project: {
+        _id: 0,
+        subjectId: "$_id",
+        subjectName: "$subjectInfo.name",
+        highestMark: 1,
+      },
+    },
+  ]);
+
+  return results; // [{ subjectId, subjectName, highestMark }, ...]
+};
+
+// import { Student } from "../Student/Student.model.js";
+
+// standard competition ranking (1,1,3 style) — sorted array থেকে position ম্যাপ বানায়
+const buildRankMap = (sortedList) => {
+  const rankMap = new Map();
+  let lastValue = null;
+  let lastRank = 0;
+  sortedList.forEach((item, idx) => {
+    if (item.totalMarks !== lastValue) {
+      lastRank = idx + 1;
+      lastValue = item.totalMarks;
+    }
+    rankMap.set(item.resultId.toString(), lastRank);
+  });
+  return rankMap;
+};
+
+const calculatePositions = async ({ examId }) => {
+  const results = await ExamResult.find({ examId }).populate({
+    path: "studentId",
+    select: "classId sectionId",
+  });
+
+  if (!results.length) {
+    throw new Error("এই exam-এর জন্য কোনো ExamResult পাওয়া যায়নি");
+  }
+
+  // প্রতিটা result-এর totalMarks বের করা (সব subject-এর total যোগফল)
+  const withTotals = results.map((r) => ({
+    resultId: r._id,
+    classId: r.studentId?.classId?.toString(),
+    sectionId: r.studentId?.sectionId?.toString(),
+    totalMarks: (r.subjects || []).reduce((sum, s) => sum + (s.total || 0), 0),
+  }));
+
+  // ---- Section-wise ranking ----
+  const bySection = {};
+  withTotals.forEach((item) => {
+    if (!item.sectionId) return;
+    if (!bySection[item.sectionId]) bySection[item.sectionId] = [];
+    bySection[item.sectionId].push(item);
+  });
+
+  const sectionRankMap = new Map();
+  Object.values(bySection).forEach((group) => {
+    const sorted = [...group].sort((a, b) => b.totalMarks - a.totalMarks);
+    const rankMap = buildRankMap(sorted);
+    rankMap.forEach((rank, resultId) => sectionRankMap.set(resultId, rank));
+  });
+
+  // ---- Class-wise ranking (সব section মিলিয়ে) ----
+  const byClass = {};
+  withTotals.forEach((item) => {
+    if (!item.classId) return;
+    if (!byClass[item.classId]) byClass[item.classId] = [];
+    byClass[item.classId].push(item);
+  });
+
+  const classRankMap = new Map();
+  Object.values(byClass).forEach((group) => {
+    const sorted = [...group].sort((a, b) => b.totalMarks - a.totalMarks);
+    const rankMap = buildRankMap(sorted);
+    rankMap.forEach((rank, resultId) => classRankMap.set(resultId, rank));
+  });
+
+  // ---- সব ExamResult আপডেট করা ----
+  const bulkOps = withTotals.map((item) => ({
+    updateOne: {
+      filter: { _id: item.resultId },
+      update: {
+        $set: {
+          "position.sectionPosition": sectionRankMap.get(item.resultId.toString()) || null,
+          "position.classPosition": classRankMap.get(item.resultId.toString()) || null,
+        },
+      },
+    },
+  }));
+
+  await ExamResult.bulkWrite(bulkOps);
+
+  return {
+    updated: bulkOps.length,
+    preview: withTotals.map((item) => ({
+      resultId: item.resultId,
+      totalMarks: item.totalMarks,
+      sectionPosition: sectionRankMap.get(item.resultId.toString()),
+      classPosition: classRankMap.get(item.resultId.toString()),
+    })),
+  };
+};
 export const ExamResultServices = {
     createExamResult,
     getAllExamResult,
@@ -203,5 +326,8 @@ export const ExamResultServices = {
     getStudentResultByStudentId,
     createExamResultWithGrading   ,
       submitSubjectAllStudents,
-  submitStudentAllSubjects
+  submitStudentAllSubjects,
+  getHighestMarksPerSubject,
+    calculatePositions,
+
 }
