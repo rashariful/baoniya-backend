@@ -17,6 +17,8 @@ const allowedOrigins = [
   "http://localhost:5000",
   "https://www.bajhs.edu.bd",
   "https://bajhs.edu.bd",
+  "https://icchaporon.com",
+"https://www.icchaporon.com",
   "https://backoffice.bajhs.edu.bd",
   "https://www.backoffice.bajhs.edu.bd",
   "https://school.bajhs.edu.bd",
