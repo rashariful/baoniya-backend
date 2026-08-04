@@ -8,15 +8,15 @@
     "node": ">=20"
   },
 
-  "scripts": {
-   "start": "node src/server.js",
+"scripts": {
+  "start": "node src/server.js",
   "dev": "nodemon src/server.js",
-  "build": "npm ci",
-    "lint": "npx lint",
-    "lint:strict": "npx lint '*/**/*.{js,jsx,ts,tsx}'",
-    "prettier": "npx prettier --write */**/*.{js,jsx,json,ts,tsx,md}",
-    "lint-prettier": "lint && prettier"
-  },
+  "build": "npm ci --include=optional",
+  "lint": "npx lint",
+  "lint:strict": "npx lint '*/**/*.{js,jsx,ts,tsx}'",
+  "prettier": "npx prettier --write */**/*.{js,jsx,json,ts,tsx,md}",
+  "lint-prettier": "lint && prettier"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
