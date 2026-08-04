@@ -17,14 +17,31 @@ let server;
 async function main() {
   try {
     await mongoose.connect(config.database_url);
-    server = app.listen(config.port, () => {
-      console.log(`✅ Server running at port ${config.port}`);
+
+    const port = Number(process.env.PORT) || 5000;
+
+    server = app.listen(port, "0.0.0.0", () => {
+      console.log(`✅ Server running at port ${port}`);
     });
   } catch (error) {
     console.error("❌ Server startup error:", error);
     process.exit(1);
   }
 }
+
+// let server;
+
+// async function main() {
+//   try {
+//     await mongoose.connect(config.database_url);
+//     server = app.listen(config.port, () => {
+//       console.log(`✅ Server running at port ${config.port}`);
+//     });
+//   } catch (error) {
+//     console.error("❌ Server startup error:", error);
+//     process.exit(1);
+//   }
+// }
 
 main();
 
