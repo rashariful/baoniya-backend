@@ -1,105 +1,173 @@
 import { Schema, model } from "mongoose";
 
+const SessionSchema = new Schema(
+  {
+    checkInTime: {
+      type: Date,
+      required: true,
+    },
+
+    checkOutTime: {
+      type: Date,
+      default: null,
+    },
+
+    duration: {
+      type: Number,
+      default: 0, // minutes
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+
 const AttendanceSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    date: { type: Date, required: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+
+    date: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+
 
     status: {
       type: String,
-      enum: ["present", "absent", "late"],
+      enum: [
+        "present",
+        "absent",
+        "late",
+        "half-day",
+        "leave",
+      ],
       default: "present",
+      index: true,
     },
+
 
     source: {
       type: String,
-      enum: ["manual", "fingerprint", "face"],
+      enum: [
+        "manual",
+        "device",
+        "fingerprint",
+        "face",
+        "card",
+        "mobile",
+      ],
       default: "manual",
     },
 
-    // ✅ Din-er first check-in ar last check-out (quick summary/list dekhanor jonno)
-    checkInTime: { type: Date },
-    checkOutTime: { type: Date },
 
-    // ✅ Protita scan-er pair ekhane thakbe (toggle in/out)
-    sessions: [
-      {
-        checkInTime: { type: Date },
-        checkOutTime: { type: Date },
-      },
-    ],
+    /**
+     * First Entry Time
+     */
+    checkInTime: {
+      type: Date,
+      default: null,
+    },
 
-    deviceId: { type: String },
-    markedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    remarks: { type: String },
+
+    /**
+     * Final Exit Time
+     */
+    checkOutTime: {
+      type: Date,
+      default: null,
+    },
+
+
+    /**
+     * Multiple Entry Exit
+     */
+    sessions: {
+      type: [SessionSchema],
+      default: [],
+    },
+
+
+    /**
+     * Hikvision Device ID
+     */
+    deviceId: {
+      type: String,
+      default: null,
+    },
+
+
+    /**
+     * Manual marked by admin
+     */
+    markedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+
+    /**
+     * Total working minutes
+     */
+    totalWorkingMinutes: {
+      type: Number,
+      default: 0,
+    },
+
+
+    remarks: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
   },
-  { timestamps: true }
+  {
+    timestamps:true,
+    versionKey:false,
+  }
 );
 
-AttendanceSchema.index({ userId: 1, date: 1 }, { unique: true });
 
-export const Attendance = model("Attendance", AttendanceSchema);
-
-// import { Schema, model } from "mongoose";
-
-// const AttendanceSchema = new Schema(
-//   {
-//     // Generic reference - kaj korbe admin, manager, teacher, student sobar jonno
-//     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-
-//     date: { type: Date, required: true },
-
-//     status: {
-//       type: String,
-//       enum: ["present", "absent", "late"],
-//       default: "present",
-//     },
-
-//     // Attendance kibhabe mark hoyeche - future-proof field
-//     // manual = mobile/admin theke hand-e mark kora
-//     // fingerprint = fingerprint device theke
-//     // face = face recognition device theke
-//     source: {
-//       type: String,
-//       enum: ["manual", "fingerprint", "face"],
-//       default: "manual",
-//     },
-
-//     // Device theke deta asle check-in / check-out time track korar jonno
-//     checkInTime: { type: Date },
-//     checkOutTime: { type: Date },
-
-//     // Kon device theke asche (jokon multiple device thakbe, track korar jonno)
-//     deviceId: { type: String },
-
-//     // Kon user (admin/teacher) ata mark korlo (manual hole) - optional
-//     markedBy: { type: Schema.Types.ObjectId, ref: "User" },
-
-//     remarks: { type: String },
-//   },
-//   { timestamps: true }
-// );
-
-// // Same user, same date - duplicate attendance entry rokhar jonno
-// AttendanceSchema.index({ userId: 1, date: 1 }, { unique: true });
-
-// export const Attendance = model("Attendance", AttendanceSchema);
+// One user one attendance per day
+AttendanceSchema.index(
+  {
+    userId:1,
+    date:1,
+  },
+  {
+    unique:true,
+  }
+);
 
 
-// // import { Schema, model } from "mongoose";
+// Faster report query
+AttendanceSchema.index({
+  date:1,
+  status:1,
+});
 
-// // const AttendanceSchema = new Schema(
-// //   {
-// //     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
-// //     date: { type: Date, required: true },
 
-// //     status: {
-// //       type: String,
-// //       enum: ["present", "absent", "late"],
-// //       default: "present",
-// //     },
-// //   },
-// //   { timestamps: true }
-// // );
+AttendanceSchema.index({
+  source:1,
+});
 
-// // export const Attendance = model("Attendance", AttendanceSchema);
+
+export const Attendance = model(
+  "Attendance",
+  AttendanceSchema
+);

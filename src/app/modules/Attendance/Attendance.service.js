@@ -5,7 +5,7 @@ import { SyncedEvent } from "../Hikvision/SyncedEvent.model.js";
 import { Teacher } from "../Teacher/Teacher.model.js";
 import { User } from "../user/user.model.js";
 import { fetchAcsEvents } from "../Hikvision/Hikvision.client.js";
-import AppError from "../../errors/appError.js"; // apnar actual path onujayi adjust korben
+// import AppError from "../../errors/appError.js"; // apnar actual path onujayi adjust korben
 
 // Duplicate IN diye vul kore check-out mark hoya thekano — 30 sec threshold
 const MIN_GAP_SECONDS = 30;
@@ -21,90 +21,446 @@ const createAttendance = async (payload) => {
 // ---------------------------------------------------------
 // 2. Mobile / App theke "Self Check-in"
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// 2. Mobile / App theke "Self Check-in / Check-out"
+// ---------------------------------------------------------
 const markSelfAttendance = async (userId, payload = {}) => {
+
   const user = await User.findById(userId);
+
   if (!user) {
-    throw new AppError(404, "User not found"); // Problem 7 fix
+    throw new Error("User not found");
   }
 
+
+  // Today start
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  let attendance = await Attendance.findOne({ userId, date: today });
 
-  if (attendance) {
-    attendance.checkOutTime = new Date();
-    await attendance.save();
-    return attendance;
-  }
+  const now = new Date();
 
-  // Problem 8 fix: sessions array-o populate kora holo
-  attendance = await Attendance.create({
+
+  let attendance = await Attendance.findOne({
     userId,
     date: today,
-    status: payload.status || "present",
-    source: "manual",
-    checkInTime: new Date(),
-    sessions: [{ checkInTime: new Date() }],
-    remarks: payload.remarks,
   });
 
+
+
+  // ===============================
+  // Already attendance exists
+  // => Check-out
+  // ===============================
+
+  if (attendance) {
+
+
+    const lastSession =
+      attendance.sessions[
+        attendance.sessions.length - 1
+      ];
+
+
+
+    // Open session exists
+    if (lastSession && !lastSession.checkOutTime) {
+
+
+      lastSession.checkOutTime = now;
+
+      attendance.checkOutTime = now;
+
+
+
+      // Calculate session duration (minutes)
+      const duration =
+        (now - lastSession.checkInTime) / 60000;
+
+
+      lastSession.duration =
+        Math.round(duration);
+
+
+
+      // Total working minutes
+
+      attendance.totalWorkingMinutes =
+        attendance.sessions.reduce(
+          (total, session) =>
+            total + (session.duration || 0),
+          0
+        );
+
+
+
+      await attendance.save();
+
+      return attendance;
+
+    }
+
+
+    // Previous session closed
+    // Create new session
+
+    attendance.sessions.push({
+
+      checkInTime: now,
+
+      checkOutTime: null,
+
+    });
+
+
+    attendance.checkInTime = attendance.checkInTime || now;
+
+
+    await attendance.save();
+
+
+    return attendance;
+
+  }
+
+
+
+
+  // ===============================
+  // First time check-in
+  // ===============================
+
+  attendance = await Attendance.create({
+
+    userId,
+
+    date: today,
+
+    status:
+      payload.status || "present",
+
+
+    source: "mobile",
+
+
+    checkInTime: now,
+
+
+    sessions: [
+      {
+        checkInTime: now,
+        checkOutTime: null,
+      }
+    ],
+
+
+    remarks:
+      payload.remarks || "",
+
+  });
+
+
+
   return attendance;
+
 };
+
+
+// ---------------------------------------------------------
+// Hikvision Device Attendance
+// Face / Fingerprint / Card Check-in & Check-out
+// ---------------------------------------------------------
+const markDeviceAttendance = async (payload) => {
+
+  const {
+    deviceUserId,
+    deviceId,
+    source,
+    timestamp,
+  } = payload;
+
+
+  if (!deviceUserId) {
+    throw new Error("deviceUserId is required");
+  }
+
+
+
+  // Find teacher from Hikvision employee ID
+
+  const teacher = await Teacher.findOne({
+    deviceUserId: String(deviceUserId),
+  });
+
+
+  if (!teacher) {
+    throw new Error(
+      `No teacher found for deviceUserId: ${deviceUserId}`
+    );
+  }
+
+
+
+  const scanTime = timestamp
+    ? new Date(timestamp)
+    : new Date();
+
+
+
+  // Create day start
+
+  const date = new Date(scanTime);
+
+  date.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+
+
+  let attendance = await Attendance.findOne({
+    userId: teacher.userId,
+    date,
+  });
+
+
+
+  // =================================================
+  // FIRST SCAN
+  // CHECK-IN
+  // =================================================
+
+  if (!attendance) {
+
+
+    attendance = await Attendance.create({
+
+      userId: teacher.userId,
+
+      date,
+
+      status: "present",
+
+      source:
+        source || "device",
+
+
+      deviceId:
+        deviceId || null,
+
+
+      checkInTime: scanTime,
+
+
+      sessions: [
+        {
+          checkInTime: scanTime,
+          checkOutTime: null,
+          duration: 0,
+        }
+      ],
+
+    });
+
+
+    return attendance;
+
+  }
+
+
+
+
+  // =================================================
+  // EXISTING ATTENDANCE
+  // CHECK OUT OR NEW SESSION
+  // =================================================
+
+
+  const sessions = attendance.sessions || [];
+
+
+  const lastSession =
+    sessions[sessions.length - 1];
+
+
+
+  // No session found
+  if (!lastSession) {
+
+
+    attendance.sessions.push({
+
+      checkInTime: scanTime,
+
+      checkOutTime: null,
+
+      duration: 0,
+
+    });
+
+
+    await attendance.save();
+
+
+    return attendance;
+
+  }
+
+
+
+
+  // =================================================
+  // Duplicate scan protection
+  // =================================================
+
+  const diffSeconds =
+    (scanTime - lastSession.checkInTime) / 1000;
+
+
+
+  if (
+    !lastSession.checkOutTime &&
+    diffSeconds < 30
+  ) {
+
+    return attendance;
+
+  }
+
+
+
+
+
+  // =================================================
+  // OPEN SESSION
+  // => CHECK OUT
+  // =================================================
+
+  if (!lastSession.checkOutTime) {
+
+
+    lastSession.checkOutTime =
+      scanTime;
+
+
+
+    const duration =
+      (
+        scanTime -
+        lastSession.checkInTime
+      ) / 60000;
+
+
+
+    lastSession.duration =
+      Math.round(duration);
+
+
+
+    attendance.checkOutTime =
+      scanTime;
+
+
+
+  }
+
+
+
+  // =================================================
+  // CLOSED SESSION
+  // => NEW CHECK-IN SESSION
+  // =================================================
+
+  else {
+
+
+    attendance.sessions.push({
+
+      checkInTime: scanTime,
+
+      checkOutTime: null,
+
+      duration: 0,
+
+    });
+
+
+    attendance.checkOutTime =
+      null;
+
+
+  }
+
+
+
+
+  // =================================================
+  // Calculate total working minutes
+  // =================================================
+
+  attendance.totalWorkingMinutes =
+    attendance.sessions.reduce(
+      (total, session) =>
+        total +
+        (session.duration || 0),
+      0
+    );
+
+
+
+  attendance.source =
+    source || attendance.source;
+
+
+  attendance.deviceId =
+    deviceId || attendance.deviceId;
+
+
+
+  await attendance.save();
+
+
+
+  return attendance;
+
+};
+
+// const markSelfAttendance = async (userId, payload = {}) => {
+//   const user = await User.findById(userId);
+//   if (!user) {
+//     throw new (404, "User not found"); // Problem 7 fix
+//   }
+
+//   const today = new Date();
+//   today.setHours(0, 0, 0, 0);
+
+//   let attendance = await Attendance.findOne({ userId, date: today });
+
+//   if (attendance) {
+//     attendance.checkOutTime = new Date();
+//     await attendance.save();
+//     return attendance;
+//   }
+
+//   // Problem 8 fix: sessions array-o populate kora holo
+//   attendance = await Attendance.create({
+//     userId,
+//     date: today,
+//     status: payload.status || "present",
+//     source: "manual",
+//     checkInTime: new Date(),
+//     sessions: [{ checkInTime: new Date() }],
+//     remarks: payload.remarks,
+//   });
+
+//   return attendance;
+// };
 
 // ---------------------------------------------------------
 // 3. Device Push / Real-time or Cron theke Shared Handler
 // ---------------------------------------------------------
-const markDeviceAttendance = async (payload) => {
-  const { deviceUserId, deviceId, source, timestamp } = payload;
-
-  if (!deviceUserId) {
-    throw new AppError(400, "deviceUserId is required"); // Problem 7 fix
-  }
-
-  // deviceUserId always string hishebe compare kora (Problem 1 relevant)
-  const teacher = await Teacher.findOne({ deviceUserId: String(deviceUserId) });
-  if (!teacher) {
-    throw new AppError(404, `No teacher found for deviceUserId: ${deviceUserId}`); // Problem 7 fix
-  }
-
-  const scanTime = timestamp ? new Date(timestamp) : new Date();
-  const date = new Date(scanTime);
-  date.setHours(0, 0, 0, 0);
-
-  let attendance = await Attendance.findOne({ userId: teacher.userId, date });
-
-  if (!attendance) {
-    attendance = await Attendance.create({
-      userId: teacher.userId,
-      date,
-      status: "present",
-      source: source || "device",
-      checkInTime: scanTime,
-      deviceId,
-      sessions: [{ checkInTime: scanTime }],
-    });
-  } else {
-    const lastSession = attendance.sessions[attendance.sessions.length - 1];
-
-    if (lastSession && !lastSession.checkOutTime) {
-      // Problem 5 fix: khub kacha-kachi somoy e duita IN scan hole (double-tap/glitch), ignore kora
-      const diffSeconds = (scanTime - lastSession.checkInTime) / 1000;
-      if (diffSeconds < MIN_GAP_SECONDS) {
-        return attendance; // duplicate/glitch scan, kichu change na kore return
-      }
-
-      lastSession.checkOutTime = scanTime;
-      attendance.checkOutTime = scanTime;
-    } else {
-      attendance.sessions.push({ checkInTime: scanTime });
-    }
-
-    await attendance.save();
-  }
-
-  return attendance;
-};
 
 // ---------------------------------------------------------
 // 4. Background Cron / Manual Pull Sync from Hikvision Device
@@ -224,7 +580,7 @@ const getAllAttendance = async (query) => {
 const getSingleAttendance = async (id) => {
   const result = await Attendance.findById(id).populate("userId", "name email role");
   if (!result) {
-    throw new AppError(404, "Attendance not found"); // Problem 7 fix
+    throw new (404, "Attendance not found"); // Problem 7 fix
   }
   return result;
 };
@@ -235,7 +591,7 @@ const updateAttendance = async (id, payload) => {
     runValidators: true,
   });
   if (!result) {
-    throw new AppError(404, "Attendance not found"); // Problem 7 fix
+    throw new (404, "Attendance not found"); // Problem 7 fix
   }
   return result;
 };
@@ -243,7 +599,7 @@ const updateAttendance = async (id, payload) => {
 const deleteAttendance = async (id) => {
   const result = await Attendance.findByIdAndDelete(id);
   if (!result) {
-    throw new AppError(404, "Attendance not found"); // Problem 7 fix
+    throw new (404, "Attendance not found"); // Problem 7 fix
   }
   return result;
 };

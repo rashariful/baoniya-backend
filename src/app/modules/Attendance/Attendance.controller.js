@@ -2,6 +2,8 @@ import catchAsync from "../../utils/catchAsync.js";
 import sendResponse from "../../utils/sendResponse.js";
 import { AttendanceServices } from "./Attendance.service.js";
 
+const DEFAULT_DEVICE_ID = process.env.DEFAULT_HIKVISION_DEVICE_ID || "hik-device-1";
+
 // 1. Manual create (admin app theke)
 const createAttendance = catchAsync(async (req, res) => {
   const result = await AttendanceServices.createAttendance(req.body);
@@ -26,17 +28,141 @@ const selfCheckIn = catchAsync(async (req, res) => {
   });
 });
 
-// 3. Device theke check-in (push)
+// 3. Device theke check-in (Hikvision PUSH — multipart/form-data format)
 const deviceCheckIn = catchAsync(async (req, res) => {
-  const result = await AttendanceServices.markDeviceAttendance(req.body);
-  sendResponse(res, {
-    status: 200,
-    success: true,
-    message: "Device attendance recorded successfully",
-    data: result,
-  });
-});
+  let eventData = req.body;
 
+  // Multipart form-data support
+  const eventPart = req.files?.find(
+    (f) => f.fieldname === "event_log"
+  );
+
+  if (eventPart) {
+    try {
+      eventData = JSON.parse(eventPart.buffer.toString());
+    } catch (e) {
+      console.error("event_log JSON parse error:", e.message);
+      return res.status(400).send("Invalid event_log JSON");
+    }
+  }
+
+  // AccessControllerEvent যদি string হয়
+  if (typeof eventData?.AccessControllerEvent === "string") {
+    try {
+      eventData.AccessControllerEvent = JSON.parse(
+        eventData.AccessControllerEvent
+      );
+    } catch (e) {
+      console.error("AccessControllerEvent parse error:", e.message);
+      return res.status(400).send("Invalid AccessControllerEvent JSON");
+    }
+  }
+
+  // console.log("========== RAW EVENT ==========");
+  // console.log(JSON.stringify(eventData, null, 2));
+
+  const rootEvent = eventData?.AccessControllerEvent || {};
+  const hikEvent = rootEvent?.AccessControllerEvent || {};
+
+  const employeeNo =
+    hikEvent.employeeNoString ||
+    hikEvent.employeeNo ||
+    null;
+
+  const major = Number(hikEvent.majorEventType);
+  const minor = Number(hikEvent.subEventType);
+
+  const verifyMode =
+    hikEvent.currentVerifyMode || "";
+
+  const timestamp =
+    rootEvent.dateTime ||
+    eventData.dateTime ||
+    new Date().toISOString();
+
+  // console.log({
+  //   employeeNo,
+  //   major,
+  //   minor,
+  //   verifyMode,
+  //   timestamp,
+  // });
+
+  // Hikvision Attendance Event
+  // minor 6 এবং 75 দুইটাই accept
+  const VALID_MINORS = [6, 75, 38,21,22 ];
+
+  if (
+    major === 5 &&
+    employeeNo &&
+    VALID_MINORS.includes(minor)
+  ) {
+    let source = "device";
+
+    const mode = verifyMode.toLowerCase();
+  
+const faceRect = hikEvent.FaceRect;
+
+// let source = "device";
+
+if (faceRect) {
+  source = "face";
+} else if (verifyMode.toLowerCase().includes("finger")) {
+  source = "fingerprint";
+} else if (verifyMode.toLowerCase().includes("card")) {
+  source = "card";
+} else {
+  // তোমার firmware-এ subEventType 38 হচ্ছে fingerprint
+  if (minor === 38) {
+    source = "fingerprint";
+  } else if (minor === 75) {
+    source = "face";
+  }
+}
+
+
+    // if (mode.includes("finger")) {
+    //   source = "fingerprint";
+    // } else if (mode.includes("fp")) {
+    //   source = "fingerprint";
+    // } else if (mode.includes("face")) {
+    //   source = "face";
+    // } else if (mode.includes("card")) {
+    //   source = "card";
+    // }
+
+    // console.log("Attendance Event");
+    // console.log({
+    //   // employeeNo,
+    //   source,
+    //   verifyMode,
+    // });
+
+    try {
+      await AttendanceServices.markDeviceAttendance({
+        deviceUserId: String(employeeNo),
+        deviceId: DEFAULT_DEVICE_ID,
+        source,
+        timestamp,
+      });
+
+      // console.log(
+      //   `Attendance marked successfully for EmployeeNo: ${employeeNo}`
+      // );
+    } catch (err) {
+      console.error(
+        `Attendance mark failed for ${employeeNo}:`,
+        err.message
+      );
+    }
+  } else {
+    // console.log(
+    //   `Ignored Event -> Major:${major} Minor:${minor} Employee:${employeeNo}`
+    // );
+  }
+
+  return res.status(200).send("OK");
+});
 // 4. Sob attendance (QueryBuilder diye filter, pagination, sort)
 const getAllAttendance = catchAsync(async (req, res) => {
   const result = await AttendanceServices.getAllAttendance(req.query);
@@ -84,7 +210,7 @@ const deleteAttendance = catchAsync(async (req, res) => {
   });
 });
 
-// 8. Hikvision Sync Endpoint (Cron ba manual trigger)
+// 8. Hikvision Sync Endpoint (Cron ba manual trigger — PULL/backup)
 const syncDeviceAttendance = catchAsync(async (req, res) => {
   const result = await AttendanceServices.syncDeviceAttendance();
   res.status(200).json({
@@ -94,18 +220,17 @@ const syncDeviceAttendance = catchAsync(async (req, res) => {
   });
 });
 
-// 9. Legacy / Custom getAllAll (jodi service-e thake ba query map korte hoy)
+// 9. Legacy / Custom getAllAll
 const getAllAttendanceAll = catchAsync(async (req, res) => {
   const filters = {
     userId: req.query.userId,
     status: req.query.status,
     source: req.query.source,
-    date: req.query.date,           // single date: "2026-07-18"
-    startDate: req.query.startDate, // range: "2026-07-01"
-    endDate: req.query.endDate,     // range: "2026-07-18"
+    date: req.query.date,
+    startDate: req.query.startDate,
+    endDate: req.query.endDate,
   };
 
-  // Ekhane QueryBuilder wala getAllAttendance use kora best, or service-e method thakle call hobe
   const result = await AttendanceServices.getAllAttendance(filters);
 
   res.status(200).json({
@@ -126,6 +251,136 @@ export const AttendanceControllers = {
   syncDeviceAttendance,
   getAllAttendanceAll,
 };
+
+// import catchAsync from "../../utils/catchAsync.js";
+// import sendResponse from "../../utils/sendResponse.js";
+// import { AttendanceServices } from "./Attendance.service.js";
+
+// // 1. Manual create (admin app theke)
+// const createAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.createAttendance(req.body);
+//   sendResponse(res, {
+//     status: 201,
+//     success: true,
+//     message: "Attendance created successfully",
+//     data: result,
+//   });
+// });
+
+// // 2. Mobile theke self check-in/out
+// const selfCheckIn = catchAsync(async (req, res) => {
+//   const userId = req.user?._id || req.body.userId;
+
+//   const result = await AttendanceServices.markSelfAttendance(userId, req.body);
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Attendance marked successfully",
+//     data: result,
+//   });
+// });
+
+// // 3. Device theke check-in (push)
+// const deviceCheckIn = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.markDeviceAttendance(req.body);
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Device attendance recorded successfully",
+//     data: result,
+//   });
+// });
+
+// // 4. Sob attendance (QueryBuilder diye filter, pagination, sort)
+// const getAllAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.getAllAttendance(req.query);
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Attendance retrieved successfully",
+//     data: result,
+//   });
+// });
+
+// // 5. Single attendance by ID
+// const getSingleAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.getSingleAttendance(req.params.id);
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Attendance retrieved successfully",
+//     data: result,
+//   });
+// });
+
+// // 6. Update attendance
+// const updateAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.updateAttendance(
+//     req.params.id,
+//     req.body
+//   );
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Attendance updated successfully",
+//     data: result,
+//   });
+// });
+
+// // 7. Delete attendance
+// const deleteAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.deleteAttendance(req.params.id);
+//   sendResponse(res, {
+//     status: 200,
+//     success: true,
+//     message: "Attendance deleted successfully",
+//     data: result,
+//   });
+// });
+
+// // 8. Hikvision Sync Endpoint (Cron ba manual trigger)
+// const syncDeviceAttendance = catchAsync(async (req, res) => {
+//   const result = await AttendanceServices.syncDeviceAttendance();
+//   res.status(200).json({
+//     success: true,
+//     message: `${result.length} attendance records synced`,
+//     data: result,
+//   });
+// });
+
+// // 9. Legacy / Custom getAllAll (jodi service-e thake ba query map korte hoy)
+// const getAllAttendanceAll = catchAsync(async (req, res) => {
+//   const filters = {
+//     userId: req.query.userId,
+//     status: req.query.status,
+//     source: req.query.source,
+//     date: req.query.date,           // single date: "2026-07-18"
+//     startDate: req.query.startDate, // range: "2026-07-01"
+//     endDate: req.query.endDate,     // range: "2026-07-18"
+//   };
+
+//   // Ekhane QueryBuilder wala getAllAttendance use kora best, or service-e method thakle call hobe
+//   const result = await AttendanceServices.getAllAttendance(filters);
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Attendance fetched successfully",
+//     data: result,
+//   });
+// });
+
+
+// export const AttendanceControllers = {
+//   createAttendance,
+//   selfCheckIn,
+//   deviceCheckIn,
+//   getAllAttendance,
+//   getSingleAttendance,
+//   updateAttendance,
+//   deleteAttendance,
+//   syncDeviceAttendance,
+//   getAllAttendanceAll,
+// };
 
 
 // // import { AttendanceServices } from "./attendance.service.js";
