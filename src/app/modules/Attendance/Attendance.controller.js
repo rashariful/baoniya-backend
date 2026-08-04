@@ -29,13 +29,12 @@ const selfCheckIn = catchAsync(async (req, res) => {
 });
 
 // 3. Device theke check-in (Hikvision PUSH — multipart/form-data format)
+
 const deviceCheckIn = catchAsync(async (req, res) => {
   let eventData = req.body;
 
   // Multipart form-data support
-  const eventPart = req.files?.find(
-    (f) => f.fieldname === "event_log"
-  );
+  const eventPart = req.files?.find((f) => f.fieldname === "event_log");
 
   if (eventPart) {
     try {
@@ -46,7 +45,7 @@ const deviceCheckIn = catchAsync(async (req, res) => {
     }
   }
 
-  // AccessControllerEvent যদি string হয়
+  // AccessControllerEvent যদি string হয়
   if (typeof eventData?.AccessControllerEvent === "string") {
     try {
       eventData.AccessControllerEvent = JSON.parse(
@@ -58,111 +57,68 @@ const deviceCheckIn = catchAsync(async (req, res) => {
     }
   }
 
-  // console.log("========== RAW EVENT ==========");
-  // console.log(JSON.stringify(eventData, null, 2));
-
   const rootEvent = eventData?.AccessControllerEvent || {};
   const hikEvent = rootEvent?.AccessControllerEvent || {};
 
-  const employeeNo =
-    hikEvent.employeeNoString ||
-    hikEvent.employeeNo ||
-    null;
+  const employeeNo = hikEvent.employeeNoString || hikEvent.employeeNo || null;
 
   const major = Number(hikEvent.majorEventType);
   const minor = Number(hikEvent.subEventType);
 
-  const verifyMode =
-    hikEvent.currentVerifyMode || "";
+  const verifyMode = hikEvent.currentVerifyMode || "";
 
   const timestamp =
-    rootEvent.dateTime ||
-    eventData.dateTime ||
-    new Date().toISOString();
-
-  // console.log({
-  //   employeeNo,
-  //   major,
-  //   minor,
-  //   verifyMode,
-  //   timestamp,
-  // });
+    rootEvent.dateTime || eventData.dateTime || new Date().toISOString();
 
   // Hikvision Attendance Event
-  // minor 6 এবং 75 দুইটাই accept
-  const VALID_MINORS = [6, 75, 38,21,22 ];
+  // minor 6, 75, 38, 21, 22 সবগুলো accept
+  const VALID_MINORS = [6, 75, 38, 21, 22];
 
-  if (
-    major === 5 &&
-    employeeNo &&
-    VALID_MINORS.includes(minor)
-  ) {
-    let source = "device";
+  if (major === 5 && employeeNo && VALID_MINORS.includes(minor)) {
+    // ============================================
+    // verifyMode / FaceRect / minor থেকে method বের করা
+    // ============================================
+    let method = "unknown";
 
+    const faceRect = hikEvent.FaceRect;
     const mode = verifyMode.toLowerCase();
-  
-const faceRect = hikEvent.FaceRect;
 
-// let source = "device";
-
-if (faceRect) {
-  source = "face";
-} else if (verifyMode.toLowerCase().includes("finger")) {
-  source = "fingerprint";
-} else if (verifyMode.toLowerCase().includes("card")) {
-  source = "card";
-} else {
-  // তোমার firmware-এ subEventType 38 হচ্ছে fingerprint
-  if (minor === 38) {
-    source = "fingerprint";
-  } else if (minor === 75) {
-    source = "face";
-  }
-}
-
-
-    // if (mode.includes("finger")) {
-    //   source = "fingerprint";
-    // } else if (mode.includes("fp")) {
-    //   source = "fingerprint";
-    // } else if (mode.includes("face")) {
-    //   source = "face";
-    // } else if (mode.includes("card")) {
-    //   source = "card";
-    // }
-
-    // console.log("Attendance Event");
-    // console.log({
-    //   // employeeNo,
-    //   source,
-    //   verifyMode,
-    // });
+    if (faceRect) {
+      method = "face";
+    } else if (mode.includes("finger") || mode.includes("fp")) {
+      method = "fingerprint";
+    } else if (mode.includes("face")) {
+      method = "face";
+    } else if (mode.includes("card")) {
+      method = "card";
+    } else if (minor === 38) {
+      // এই firmware-এ subEventType 38 => fingerprint
+      method = "fingerprint";
+    } else if (minor === 75) {
+      // subEventType 75 => face
+      method = "face";
+    }
 
     try {
       await AttendanceServices.markDeviceAttendance({
         deviceUserId: String(employeeNo),
         deviceId: DEFAULT_DEVICE_ID,
-        source,
+        source: "device",
+        method,
         timestamp,
       });
-
-      // console.log(
-      //   `Attendance marked successfully for EmployeeNo: ${employeeNo}`
-      // );
     } catch (err) {
-      console.error(
-        `Attendance mark failed for ${employeeNo}:`,
-        err.message
-      );
+      console.error(`Attendance mark failed for ${employeeNo}:`, err.message);
     }
   } else {
-    // console.log(
-    //   `Ignored Event -> Major:${major} Minor:${minor} Employee:${employeeNo}`
-    // );
+    // console.log(`Ignored Event -> Major:${major} Minor:${minor} Employee:${employeeNo}`);
   }
 
   return res.status(200).send("OK");
 });
+
+
+
 // 4. Sob attendance (QueryBuilder diye filter, pagination, sort)
 const getAllAttendance = catchAsync(async (req, res) => {
   const result = await AttendanceServices.getAllAttendance(req.query);
