@@ -2,15 +2,16 @@
   "name": "node_mongoose_js_boilerplate",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+"main": "src/server.js",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
+
   "scripts": {
-    "start": "nodemon src/server.js",
-    "dev": "nodemon src/server.js",
-    "build": "npm install --production=false && npm ci",
+   "start": "node src/server.js",
+  "dev": "nodemon src/server.js",
+  "build": "npm ci",
     "lint": "npx lint",
     "lint:strict": "npx lint '*/**/*.{js,jsx,ts,tsx}'",
     "prettier": "npx prettier --write */**/*.{js,jsx,json,ts,tsx,md}",
