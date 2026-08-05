@@ -85,23 +85,57 @@ const calculateSubjectResult = async ({ subjectId, marksObj, isAbsent }) => {
 const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
   const classGroup = await ClassGroup.findById(classGroupId);
 
-  const anyCompulsoryFail = await hasCompulsoryFail(subjectResults);
+  // ৪র্থ/Optional সাবজেক্ট আলাদা করা — মূল গড়ে এরা ধরা হবে না, শুধু বোনাস দেবে
+  const mainSubjectResults = [];
+  let bonusPoint = 0;
+
+  for (const sr of subjectResults) {
+    const subject = await Subject.findById(sr.subjectId);
+    if (subject.subjectType === "4th Subject") {
+      const bonus = Math.max(0, sr.gradePoint - 2.0);
+      bonusPoint += bonus;
+    } else {
+      mainSubjectResults.push(sr);
+    }
+  }
+
+  const anyCompulsoryFail = await hasCompulsoryFail(mainSubjectResults);
 
   let overallStatus = "Pass";
   if (classGroup.passFailPolicy === "ANY_COMPULSORY_FAIL" && anyCompulsoryFail) {
     overallStatus = "Fail";
   }
 
-  const gpa =
-    overallStatus === "Fail"
-      ? 0
-      : +(
-          subjectResults.reduce((sum, s) => sum + s.gradePoint, 0) /
-          subjectResults.length
-        ).toFixed(2);
+  let gpa = 0;
+  if (overallStatus !== "Fail") {
+    const baseGpa =
+      mainSubjectResults.reduce((sum, s) => sum + s.gradePoint, 0) /
+      mainSubjectResults.length;
+    gpa = Math.min(5, +(baseGpa + bonusPoint).toFixed(2));
+  }
 
   return { overallStatus, gpa };
 };
+// const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
+//   const classGroup = await ClassGroup.findById(classGroupId);
+
+//   const anyCompulsoryFail = await hasCompulsoryFail(subjectResults);
+
+//   let overallStatus = "Pass";
+//   if (classGroup.passFailPolicy === "ANY_COMPULSORY_FAIL" && anyCompulsoryFail) {
+//     overallStatus = "Fail";
+//   }
+
+//   const gpa =
+//     overallStatus === "Fail"
+//       ? 0
+//       : +(
+//           subjectResults.reduce((sum, s) => sum + s.gradePoint, 0) /
+//           subjectResults.length
+//         ).toFixed(2);
+
+//   return { overallStatus, gpa };
+// };
 
 const hasCompulsoryFail = async (subjectResults) => {
   for (const sr of subjectResults) {
