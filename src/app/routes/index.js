@@ -34,6 +34,7 @@ import { GradingScaleRoutes } from "../modules/GradingScale/GradingScale.routes.
 import { ClassGroupRoutes } from "../modules/ClassGroup/ClassGroup.routes.js";
 import { SyncQueueRoutes } from "../modules/SyncQueue/SyncQueue.routes.js";
 import { DeviceRoutes } from "../modules/Device/Device.routes.js";
+import { DashboardRoutes } from "../modules/Dashboard/Dashboard.route.js";
 
 
 
@@ -90,6 +91,10 @@ const moduleRoutes = [
   {
     path: "/notification",
     route: NotificationRoutes
+  },
+  {
+    path: "/dashboard",
+    route: DashboardRoutes
   },
   {
     path: "/attendance",
