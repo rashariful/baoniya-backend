@@ -180,7 +180,7 @@ const markSelfAttendance = async (userId, payload = {}) => {
 //  > 12:00         -> absent
 // ==========================================================
 const CHECK_IN_HOUR = 8;
-const LATE_GRACE_MINUTES = 30;
+const LATE_GRACE_MINUTES = 15;
 const HALF_DAY_CUTOFF_HOUR = 12;
 
 const getAttendanceStatus = (checkInTime) => {

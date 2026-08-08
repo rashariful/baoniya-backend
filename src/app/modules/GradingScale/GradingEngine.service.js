@@ -80,22 +80,33 @@ const calculateSubjectResult = async ({ subjectId, marksObj, isAbsent }) => {
     gradePoint,
   };
 };
-
-// ৪. পুরো exam-এর সব subject মিলিয়ে overall result + GPA বের করা
 const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
   const classGroup = await ClassGroup.findById(classGroupId);
 
-  // ৪র্থ/Optional সাবজেক্ট আলাদা করা — মূল গড়ে এরা ধরা হবে না, শুধু বোনাস দেবে
   const mainSubjectResults = [];
   let bonusPoint = 0;
 
   for (const sr of subjectResults) {
-    const subject = await Subject.findById(sr.subjectId);
+    // absent subject বাদ দিন — GPA গণনায় ধরা যাবে না
+    if (sr.isAbsent) continue;
+
+    // subjectId object হতে পারে (populated) — সেখান থেকে raw id বের করা
+    const subjectIdValue =
+      typeof sr.subjectId === "object" && sr.subjectId !== null
+        ? sr.subjectId._id
+        : sr.subjectId;
+
+    const subject = await Subject.findById(subjectIdValue);
+    if (!subject) continue;
+
+    const gradePoint = Number(sr.gradePoint);
+    if (isNaN(gradePoint)) continue; // gradePoint invalid হলে বাদ
+
     if (subject.subjectType === "4th Subject") {
-      const bonus = Math.max(0, sr.gradePoint - 2.0);
+      const bonus = Math.max(0, gradePoint - 2.0);
       bonusPoint += bonus;
     } else {
-      mainSubjectResults.push(sr);
+      mainSubjectResults.push({ ...sr, gradePoint });
     }
   }
 
@@ -106,16 +117,58 @@ const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
     overallStatus = "Fail";
   }
 
+  // absent subject থাকলে overallStatus Fail হওয়া উচিত কিনা, সেটাও ভেবে দেখুন
+  const anyAbsent = subjectResults.some((sr) => sr.isAbsent);
+  if (anyAbsent && classGroup.passFailPolicy === "ANY_COMPULSORY_FAIL") {
+    overallStatus = "Fail"; // policy অনুযায়ী adjust করুন
+  }
+
   let gpa = 0;
-  if (overallStatus !== "Fail") {
+  if (overallStatus !== "Fail" && mainSubjectResults.length > 0) {
     const baseGpa =
       mainSubjectResults.reduce((sum, s) => sum + s.gradePoint, 0) /
       mainSubjectResults.length;
-    gpa = Math.min(5, +(baseGpa + bonusPoint).toFixed(2));
+    const rawGpa = baseGpa + bonusPoint;
+    gpa = isNaN(rawGpa) ? 0 : Math.min(5, +rawGpa.toFixed(2));
   }
 
   return { overallStatus, gpa };
 };
+// ৪. পুরো exam-এর সব subject মিলিয়ে overall result + GPA বের করা
+// const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
+//   const classGroup = await ClassGroup.findById(classGroupId);
+
+//   // ৪র্থ/Optional সাবজেক্ট আলাদা করা — মূল গড়ে এরা ধরা হবে না, শুধু বোনাস দেবে
+//   const mainSubjectResults = [];
+//   let bonusPoint = 0;
+
+//   for (const sr of subjectResults) {
+//     const subject = await Subject.findById(sr.subjectId);
+//     if (subject.subjectType === "4th Subject") {
+//       const bonus = Math.max(0, sr.gradePoint - 2.0);
+//       bonusPoint += bonus;
+//     } else {
+//       mainSubjectResults.push(sr);
+//     }
+//   }
+
+//   const anyCompulsoryFail = await hasCompulsoryFail(mainSubjectResults);
+
+//   let overallStatus = "Pass";
+//   if (classGroup.passFailPolicy === "ANY_COMPULSORY_FAIL" && anyCompulsoryFail) {
+//     overallStatus = "Fail";
+//   }
+
+//   let gpa = 0;
+//   if (overallStatus !== "Fail") {
+//     const baseGpa =
+//       mainSubjectResults.reduce((sum, s) => sum + s.gradePoint, 0) /
+//       mainSubjectResults.length;
+//     gpa = Math.min(5, +(baseGpa + bonusPoint).toFixed(2));
+//   }
+
+//   return { overallStatus, gpa };
+// };
 // const calculateOverallResult = async ({ subjectResults, classGroupId }) => {
 //   const classGroup = await ClassGroup.findById(classGroupId);
 
