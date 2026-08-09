@@ -42,7 +42,7 @@ const createStudent = async (file, payload) => {
 //     return result;
 // }
 const getAllStudent = async (query) => {
-  const StudentSearchableFields = ["name", "roll", "phone"];
+  const StudentSearchableFields = ["name", "roll", "phone","studentId","guardianPhone"];
 
   const resultQuery = new QueryBuilder(
     Student.find()
