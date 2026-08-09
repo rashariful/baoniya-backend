@@ -3,11 +3,31 @@ import { Subject } from "../Subject/Subject.model.js";
 import { ClassGroup } from "../ClassGroup/ClassGroup.model.js";
 
 // ১. একটা subject-এর component marks যোগ করে total বের করা
-const calculateSubjectTotal = (marksObj) => {
-  const { written = 0, mcq = 0, ca = 0, practical = 0 } = marksObj;
-  return written + mcq + ca + practical;
+const calculateSubjectTotal = (marksObj, fullMarks) => {
+  const {
+    written = 0,
+    mcq = 0,
+    ca = 0,
+    practical = 0,
+  } = marksObj;
+
+  const total = written + mcq + ca + practical;
+
+  if (total > fullMarks) {
+    throw new Error(
+      `Obtained marks (${total}) cannot exceed full marks (${fullMarks})`
+    );
+  }
+
+  return total;
 };
 
+
+// akahne kono validation chilo na ai add korlam 
+// const calculateSubjectTotal = (marksObj) => {
+//   const { written = 0, mcq = 0, ca = 0, practical = 0 } = marksObj;
+//   return written + mcq + ca + practical;
+// };
 // ২. একটা obtained mark, নির্দিষ্ট GradingScale অনুযায়ী grade/GP বের করা
 //    PERCENTAGE হলে fullMark দিয়ে percentage বের করে slab মেলাবে
 //    ABSOLUTE হলে সরাসরি obtainedMark দিয়ে slab মেলাবে
@@ -48,7 +68,11 @@ const calculateSubjectResult = async ({ subjectId, marksObj, isAbsent }) => {
     };
   }
 
-  const total = calculateSubjectTotal(marksObj);
+  // ata ager comment out kore rakhlam for validation 
+  // const total = calculateSubjectTotal(marksObj);
+const total = calculateSubjectTotal(marksObj, subject.fullMarks);
+
+
   const status = total >= subject.passMarks ? "Pass" : "Fail";
 
   // scale resolve: subject-এর নিজস্ব override না থাকলে classGroup default ব্যবহার হবে
