@@ -49,7 +49,7 @@ const getAllExamResult = async (query) => {
   resultQuery.modelQuery = resultQuery.modelQuery.populate([
     {
       path: "studentId",
-      select: "studentId name roll classId sectionId"
+      select: "studentId name roll classId sectionId thumbnail"
     },
     {
       path: "examId",
