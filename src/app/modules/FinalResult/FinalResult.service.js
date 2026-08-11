@@ -8,7 +8,8 @@ import { ClassGroup } from "../ClassGroup/ClassGroup.model.js";
 import { GradingEngine } from "../GradingScale/GradingEngine.service.js";
 
 // ---------- Helper: safe number check ----------
-const isValidNumber = (val) => typeof val === "number" && !isNaN(val) && isFinite(val);
+const isValidNumber = (val) =>
+  typeof val === "number" && !isNaN(val) && isFinite(val);
 
 // Single student result generation logic
 const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
@@ -31,7 +32,7 @@ const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
 
   if (validResults.length === 0) {
     throw new Error(
-      `এই student (${studentId}) এর এই classGroup/session-এর কোনো valid exam result পাওয়া যায়নি`
+      `এই student (${studentId}) এর এই classGroup/session-এর কোনো valid exam result পাওয়া যায়নি`,
     );
   }
 
@@ -42,7 +43,11 @@ const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
   for (const r of validResults) {
     const gpa = Number(r.gpa);
     if (!isValidNumber(gpa)) {
-      skippedExams.push({ examResultId: r._id, examId: r.examId?._id, rawGpa: r.gpa });
+      skippedExams.push({
+        examResultId: r._id,
+        examId: r.examId?._id,
+        rawGpa: r.gpa,
+      });
       continue; // invalid gpa হলে termResults-এ ঢুকাবো না
     }
     termResults.push({
@@ -56,13 +61,13 @@ const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
   if (skippedExams.length > 0) {
     console.warn(
       `[generateFinalResult] Invalid/NaN gpa পাওয়া গেছে, বাদ দেওয়া হলো — studentId: ${studentId}`,
-      skippedExams
+      skippedExams,
     );
   }
 
   if (termResults.length === 0) {
     throw new Error(
-      `এই student (${studentId}) এর কোনো exam-এর valid GPA নেই — CGPA calculate করা যাচ্ছে না`
+      `এই student (${studentId}) এর কোনো exam-এর valid GPA নেই — CGPA calculate করা যাচ্ছে না`,
     );
   }
 
@@ -77,7 +82,7 @@ const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
     // এখানেই আসল guard — NaN কখনোই DB পর্যন্ত পৌঁছাতে দেওয়া হবে না
     throw new Error(
       `CGPA calculation থেকে invalid ভ্যালু পাওয়া গেছে (studentId: ${studentId}). ` +
-        `GradingEngine.calculateFinalResult চেক করুন — mergeStrategy: "${classGroup.mergeStrategy}"`
+        `GradingEngine.calculateFinalResult চেক করুন — mergeStrategy: "${classGroup.mergeStrategy}"`,
     );
   }
 
@@ -98,7 +103,7 @@ const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
       cgpa,
       overallStatus,
     },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
   return finalResult;
@@ -147,7 +152,9 @@ const generateBulkFinalResult = async (payload) => {
       }
 
       if (!resolvedClassGroupId) {
-        throw new Error(`classGroupId resolve করা যায়নি (studentId: ${student._id})`);
+        throw new Error(
+          `classGroupId resolve করা যায়নি (studentId: ${student._id})`,
+        );
       }
 
       const singleResult = await generateFinalResult({
@@ -158,7 +165,10 @@ const generateBulkFinalResult = async (payload) => {
       results.push(singleResult);
     } catch (err) {
       // একজনের ভুল ডেটার কারণে পুরো bulk operation যাতে না থামে
-      console.error(`[generateBulkFinalResult] Failed for student ${student._id}:`, err.message);
+      console.error(
+        `[generateBulkFinalResult] Failed for student ${student._id}:`,
+        err.message,
+      );
       failed.push({
         studentId: student._id,
         studentName: student.name,
@@ -182,17 +192,40 @@ const createFinalResult = async (payload) => {
 
 const getAllFinalResult = async (query) => {
   const FinalResultSearchableFields = [];
+
   const resultQuery = new QueryBuilder(
     FinalResult.find()
-      .populate("studentId", "name studentId")
+      .populate({
+        path: "studentId",
+        select:
+          "name roll fatherName motherName thumbnail studentId guardianPhone classId sectionId",
+        populate: [
+          {
+            path: "classId",
+            select: "name code classGroupId",
+          },
+          {
+            path: "sectionId",
+            select: "name",
+          },
+        ],
+      })
+
       .populate("classGroupId", "name")
+
       .populate("sessionId", "name")
+
       .populate("termResults.examId", "name term")
+
       .populate({
         path: "termResults.examResultId",
         select: "subjects overallStatus gpa",
-        populate: { path: "subjects.subjectId", select: "name code fullMarks passMarks" },
+        populate: {
+          path: "subjects.subjectId",
+          select: "name code fullMarks passMarks",
+        },
       }),
+
     query
   )
     .search(FinalResultSearchableFields)
@@ -205,22 +238,105 @@ const getAllFinalResult = async (query) => {
   const result = await resultQuery.modelQuery;
   const meta = await resultQuery.countTotal();
 
-  return { data: result, meta };
+  return {
+    data: result,
+    meta,
+  };
 };
+
+// const getAllFinalResult = async (query) => {
+//   const FinalResultSearchableFields = [];
+//   const resultQuery = new QueryBuilder(
+//     FinalResult.find()
+//       .populate({
+//         path: "studentId",
+//         select: "name roll fatherName motherName thumbnail studentId classId",
+//         populate: {
+//           path: "classId",
+//           select: "name code classGroupId",
+//         },
+//       })
+//       .populate("classGroupId", "name")
+//       .populate("sessionId", "name")
+//       .populate("termResults.examId", "name term")
+//       .populate({
+//         path: "termResults.examResultId",
+//         select: "subjects overallStatus gpa",
+//         populate: {
+//           path: "subjects.subjectId",
+//           select: "name code fullMarks passMarks",
+//         },
+//       }),
+//     query,
+//   )
+//     .search(FinalResultSearchableFields)
+//     .filter()
+//     .sort()
+//     .fields()
+//     .paginate()
+//     .limit();
+
+//   const result = await resultQuery.modelQuery;
+//   const meta = await resultQuery.countTotal();
+
+//   return { data: result, meta };
+// };
 
 const getSingleFinalResult = async (id) => {
   const result = await FinalResult.findById(id)
-    .populate("studentId", "name studentId")
+    .populate({
+      path: "studentId",
+      select:
+        "name roll fatherName motherName thumbnail studentId guardianPhone classId sectionId",
+      populate: [
+        {
+          path: "classId",
+          select: "name code classGroupId",
+        },
+        {
+          path: "sectionId",
+          select: "name",
+        },
+      ],
+    })
     .populate("classGroupId", "name")
     .populate("sessionId", "name")
     .populate("termResults.examId", "name term")
     .populate({
       path: "termResults.examResultId",
       select: "subjects overallStatus gpa",
-      populate: { path: "subjects.subjectId", select: "name code fullMarks passMarks" },
+      populate: {
+        path: "subjects.subjectId",
+        select: "name code fullMarks passMarks",
+      },
     });
+
   return result;
 };
+
+// const getSingleFinalResult = async (id) => {
+//   const result = await FinalResult.findById(id)
+//     .populate({
+//       path: "studentId",
+//       select: "name roll fatherName motherName thumbnail studentId classId",
+//       populate: {
+//         path: "classId",
+//         select: "name code classGroupId",
+//       },
+//     })
+//     .populate("classGroupId", "name")
+//     .populate("sessionId", "name")
+//     .populate("termResults.examId", "name term")
+//     .populate({
+//       path: "termResults.examResultId",
+//       select: "subjects overallStatus gpa",
+//       populate: {
+//         path: "subjects.subjectId",
+//         select: "name code fullMarks passMarks",
+//       },
+//     });
+//   return result;
+// };
 
 const updateFinalResult = async (id, payload) => {
   const result = await FinalResult.findByIdAndUpdate(id, payload, {
@@ -244,7 +360,6 @@ export const FinalResultServices = {
   generateFinalResult,
   generateBulkFinalResult,
 };
-
 
 // import { FinalResult } from "./FinalResult.model.js";
 // import QueryBuilder from "../../helpers/QueryBuilder.js";
@@ -294,7 +409,6 @@ export const FinalResultServices = {
 
 //   return finalResult;
 // };
-
 
 // const generateBulkFinalResult = async (payload) => {
 //   const { classGroupId, classId, sectionId, sessionId } = payload;
@@ -369,7 +483,6 @@ export const FinalResultServices = {
 // //     results,
 // //   };
 // // };
-
 
 // // const generateFinalResult = async ({ studentId, classGroupId, sessionId }) => {
 // //   const classGroup = await ClassGroup.findById(classGroupId);
@@ -466,7 +579,6 @@ export const FinalResultServices = {
 //     const result = await FinalResult.findByIdAndDelete(id);
 //     return result;
 // }
-
 
 // export const FinalResultServices = {
 //     createFinalResult,
